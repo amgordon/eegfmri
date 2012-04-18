@@ -1,1 +1,3 @@
 This set of scripts is used to perform an analysis of simultaneously-collected fMRI and eeg data.
+
+Some scripts are written by Alex Gonzalez (AGB), and some by Alan Gordon (AMG).  Additionally, some of these scripts are based on the work of Ben Hutchinson (JBH)
