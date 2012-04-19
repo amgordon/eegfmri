@@ -1,180 +1,30 @@
 function [S results] = EF_EEG_ResponseFunction(subj_id)
 %to do:
 
-% separate some stuff into  mini functions
+%% Immediately
 
-% run EEG ERP creation software to zscore each channel to itself, run-wise.
+% why can't we classify BOLD in some subjects e.g #2, #3?
 
-% have more flexible control over which trials get selected
+% separate some stuff into mini functions
 
-% test out ridge.  can we include regressors of no interest (e.g. model
-% each specific button?
 
-% include classification of memory states
 
-% classification across time points
-
-% what's with bold data for subject 1?  try with a
-% smaller roi.
-
+%% Eventually
 % use mixed models in R to look at accuracy
 
 % use non-normalized, non-smoothed patterns for deconvolution
 
-% make github for this
-
 % direct correlation of eeg activity and BOLD? (e.g. what anthony wants).
 
-%what's going on with some subjects, e.g #2, #3?
+% test out ridge.  can we include regressors of no interest (e.g. model
+% each specific button?
 
-%NaNs in results are not OK.  Can we fix this?
-
+% use trialwise old/new eeg confidence as a regressor of interest in a
+% univariate bold data set.  
 results = [];
 
-%% Params
-par = EF_Params(subj_id);
-
-%get behavioral info
-[res idx] = EF_BehAnalyzer(par);
-
-S.subj_id = subj_id;
-S.expt_dir = '/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/';
-S.univar_dir = [S.expt_dir S.subj_id '/' 'analysis_buttonPresses'];
-S.eeg_dir = [S.expt_dir S.subj_id '/erpData'];
-S.workspace_dir = [S.expt_dir S.subj_id '/' 'mvpa'];
-S.patRegSet = {'EF'};
-S.patReg = 'trialBetas';
-S.patRegDir = [S.expt_dir S.subj_id '/' S.patReg];
-S.exp_name = 'AG';
-
-S.createAnalysisMap = false;
-
-%% Condition Parameters
-S.conds = 'finger1';
-S.dur = sum(par.numvols) * par.TR;
-
-%% Smoothing Parameters
-S.use_unsmoothed = 0;
-S.smoothTxt = {'smoothed' 'unsmoothed'};
-
-if S.use_unsmoothed
-    par.filesForPatterns = par.wascanfiles;
-else
-    par.filesForPatterns = par.swascanfiles;
-end
-
-%% Volume Params
-S.roi_name = 'mask.hdr';
-S.roi_file = ['/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/' subj_id '/analysis_buttonPresses_bySpectralPower/mask.hdr'];
-%S.roi_file = [S.univar_dir '/' S.roi_name];
-%S.roi_file = ['/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/' subj_id '/analysis_buttonPresses_byAmp_RTLocked/leftMotorCortex.nii'];
-S.vol_info = spm_vol(['/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/' subj_id '/analysis_buttonPresses_bySpectralPower/beta_0001.hdr']);
-%S.secondaryMask = [];
-S.secondaryMask = ['/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/' subj_id '/analysis_buttonPresses_byAmp_RTLocked/leftMotorCortex.nii'];
-
-%% locking and interpolation
-S.interp = true;
-S.lock = 'RT';
-S.interpText = {'interp' 'noInterp'};
-
-%% TRs
-S.TR_weights = {[1] [0 1] [0 0 1] [0 0 0 1] [0 0 0 0 1] [0 0 0 0 0 1]};
-S.TRs_to_average_over = 1:length(S.TR_weights);
-S.TRByTR = 1;
-S.TRPatName = 'patsByTR';
-
-%% Workspace Parameters
-S.use_premade_workspace = 1;
-
-if ~iscell(S.TR_weights)
-    S.TRDescription = num2str(find(S.TR_weights));
-else
-    S.TRDescription = 'TRs1Through6';
-end
-
-S.condensePatterns = false;
-S.useBetaMapPatterns = true;
-
-if S.useBetaMapPatterns
-    S.betaMapTxt = 'betaMaps';
-else
-    S.betaMapTxt = '';
-end
-
-S.workspace = fullfile(S.workspace_dir, [S.subj_id '_' S.roi_name '_' S.smoothTxt{S.use_unsmoothed + 1} '_' S.TRDescription '_' S.lock '_' S.interpText{2-S.interp} S.betaMapTxt '.mat']);
-
-%% EEG Params
-S.eegToFMRIClassification = true;
-S.eegDataType = 'trialdata_RTlock.mat';
-S.decimationFactor = 5;
-S.ChOI = {'frontal.FM' 'frontal.LFI' 'frontal.LFS' 'central.CM' 'central.LCI' 'central.LCS'};
-S.TOI = 400:600; % in units of samples
-
-%% Classifier Params
-
-%S.lambda = [.01 .1 1 10 100 1000 10000];
-S.lambda = 10;
-S.trainOptsSVM = '-s 3 -t 0 -c ';
-S.trainOptsLibLinear = '-q -s 0 -c ';
-S.nXvals = 10;
-S.classifier = 'svr';
-S.nFeats = 1000;
-S.FS = false;
-S.normalizeFeatures = true;
-S.ValidationLambda = 10;
-
-%% classFile
-S.classMatDir = ['/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/EEG_to_BOLD/classMats/'];
-S.classMatType = 'EF';
-
-%% beta map creation
-S.modelSubSample = 1; %0 for no sub-sampling, 1 to subsample only the session of interest
-S.betaMapPrefix = 'whole_brain_trial_';
-S.bf = 'FIR'; %FIR or HRF
-S.num_FIR_bins = 8;
-
-%% images
-if S.useBetaMapPatterns
-    if S.TRByTR
-        idx.TRsExist = false(length(idx.allTrials), S.num_FIR_bins);
-        for TRN = 1:S.num_FIR_bins
-            S.filenames{TRN} = [];
-            for tN = 1:length(idx.allTrials)
-                dImg = dir(fullfile(S.patRegDir,[ S.betaMapPrefix prepend(num2str(tN),4) '_TR' num2str(TRN) '.img']));
-                if ~isempty(dImg)
-                    idx.TRsExist(tN, TRN) = true;
-                    S.filenames{TRN} = [S.filenames{TRN}; [S.patRegDir '/' dImg.name]];
-                end
-            end
-            S.preprocPatCondensedName{TRN} = ['betaMaps_' num2str(TRN)];
-        end
-    else
-        dImg = dir(fullfile(S.patRegDir,[ S.betaMapPrefix '*.img']));
-        S.filenames{1} = [repmat([S.patRegDir '/'],length(dImg),1) vertcat(dImg.name)];
-        S.preprocPatCondensedName = {'betaMaps'};
-    end
-    S.runs_vector = histc(idx.sess, unique(idx.sess));
-    S.preprocPatName = 'spiral_hp_z';
-    for f=1:length(S.filenames)
-        S.preprocPatCondensedMaskedName{f} = [S.preprocPatCondensedName{f} '_masked'];
-        S.img_files{f} = mat2cell(S.filenames{f}, [ones(1,size(S.filenames{f},1))], [size(S.filenames{f},2)]);
-    end
-    S.patFinalGroupName = [S.preprocPatCondensedName{1}(1:(end-1)) 'group'];
-else
-    S.preprocPatName = 'spiral_hp_z';
-    S.preprocPatCondensedName = 'spiral_hp_z_condensed';
-    S.filenames = vertcat(par.filesForPatterns);
-    S.img_files = mat2cell(S.filenames, [ones(1,size(S.filenames,1))], [size(S.filenames,2)]);
-    S.runs_vector =  par.usedVols;
-end
-
-
-
-%% Runs Parameters
-S.meta_runs = S.runs_vector;
-S.num_runs = length(S.runs_vector);
-S.num_vols = sum(S.runs_vector);
-S.TR = 2;
+%generate params
+[S par] = EF_EEG_ResponseParams(subj_id);
 
 %% Begin Analysis Here
 existWorkspace = exist(S.workspace);
@@ -187,10 +37,12 @@ end
 
 S.num_conds = size(S.onsets,2);
 
-if S.useBetaMapPatterns
-    if (S.use_premade_workspace&&existWorkspace) % if we are supposed to use premade workspace, and one with the correct name exists
-        load(S.workspace, 'subj')
-    else
+if (S.use_premade_workspace&&existWorkspace) % if we are supposed to use premade workspace, and one with the correct name exists
+        load(S.workspace, 'subj','condensed_regs_of_interest', 'condensed_runs');
+else
+        
+    if S.useBetaMapPatterns % read beta map patterns
+        
         % initialize subj structure
         subj = init_subj(S.exp_name,S.subj_id);
         
@@ -218,12 +70,8 @@ if S.useBetaMapPatterns
         
         save (S.workspace)
         
-    end
+    else %load raw data patterns
     
-else
-    if (S.use_premade_workspace&&existWorkspace) % if we are supposed to use premade workspace, and one with the correct name exists
-        load(S.workspace, 'subj', 'condensed_regs_of_interest', 'condensed_runs');
-    else
         [subj] = EF_mvpa_load_and_preprocess_raw_data(S);
         
         % turn onsets into regressors matrix
@@ -251,7 +99,7 @@ else
         idx_condense =find(sum(all_regs));
         all_trials = sum(all_regs,1);
         meta_runs = find(all_trials);
-           
+        
         %% sessions
         regs = condensed_regs_of_interest(1,:);
         
@@ -262,148 +110,8 @@ else
         allSess_h(end,:) = 1;
         allSess = allSess_h;
         
-        %% create beta maps through deconvolultion
-        if S.createAnalysisMap
-            
-            xSPMOrig = load(fullfile(S.univar_dir, 'SPM.mat'));
-            xSPMOrig = xSPMOrig.SPM;
-            
-            %create new U struct for trial-specific regressor
-            xSPMOrig.Sess.U(2:(end+1)) = xSPMOrig.Sess.U(1:(end));
-            xSPMOrig.Sess.U(1).P.name = 'none';
-            xSPMOrig.Sess.U(1).dur = 0;
-            
-            k = xSPMOrig.nscan;
-            fMRI_T     = xSPMOrig.xBF.T;
-            fMRI_T0    = xSPMOrig.xBF.T0;
-            bf = xSPMOrig.xBF.bf;
-            V = xSPMOrig.xBF.Volterra;
-            
-            pat = subj.patterns{end}.mat; %MAKE THIS MORE GENERAL
-            sess = xSPMOrig.Sess.C.C;
-            constant_col = ones(size(sess,1),1);
-            
-            idx.sessTR = subj.selectors{1}.mat;
-                                
-            for a = 1:length(idx.allTrials);
-                
-                xSPM = xSPMOrig;
-                
-                thisOnset = idx.allTrials(a);
-                
-                thisOnsetName = [S.betaMapPrefix prepend(num2str(a),4)];
-                
-                %remove thisOnset from its original location
-                for u=2:length(xSPM.Sess.U);
-                    idxToDelete = ismember(xSPM.Sess.U(u).ons, thisOnset);
-                    xSPM.Sess.U(u).ons(idxToDelete) = [];
-                    xSPM.Sess.U(u).dur(idxToDelete) = [];
-                end
-                
-                    
-                    xSPM.Sess.U(1).ons = thisOnset;
-                    xSPM.Sess.U(1).dur = 0;
-                    xSPM.Sess.U(1).name = {thisOnsetName};
-                    
-                    %remove conditions with no onsets.
-                    idxToRemove = [];
-                    for u=2:length(xSPM.Sess.U);
-                        if isempty(xSPM.Sess.U(u).ons)
-                            idxToRemove = [u idxToRemove];
-                        end
-                    end
-                    xSPM.Sess.U(idxToRemove)=[];
-                    
-                    % Get inputs, neuronal causes or stimulus functions U
-                    U = spm_get_ons(xSPM,1);
-                    
-                    % Convolve stimulus functions with basis functions
-                    X = spm_Volterra(U,bf,V);
-                    
-                    % Resample regressors at acquisition times (32 bin offset)
-                    X = X([0:(k - 1)]*fMRI_T + fMRI_T0 + 32,:);
-                    
-                    betaMaps = {'1'};
-                    
-                    %replace the first regressor with a set of FIR regs
-                    if strcmp(S.bf, 'FIR')
-                        X(:,1) = [];
-                        
-                        xFIR = zeros(size(X,1),S.num_FIR_bins);
-                        
-                        for h=1:S.num_FIR_bins
-                            thisTR = h + floor(thisOnset/S.TR);
-                            
-                            % only add the regressor if its value is less
-                            % than the number of volumes in a session.
-                            if thisTR<=size(X,1)
-                                xFIR(thisTR, h)=1;
-                                betaMaps{h} = ['TR' num2str(h)];
-                            end
-                        end
-                        
-                        X = [xFIR X];
-
-                    end
-                
-                % only put data and model from the session to which the
-                % given trial belongs
-                if S.modelSubSample==1
-
-                    idx.thisSess = (idx.sessTR==idx.sess(a));
-                    
-                    XMat = [X(idx.thisSess,:) constant_col(idx.thisSess)];
-                    
-                    %remove all-zero columns
-                    idx.notAllZero = sum(abs(XMat))~=0;
-                    XMat = XMat(:,idx.notAllZero);
-                    
-                    patMat = pat(:,idx.thisSess);
-                    
-                    betaMaps(~idx.notAllZero(1:length(betaMaps))) = [];
-                else
-                    XMat = [X sess constant_col ];
-                end
-                
-                %preallocate betas
-                b = nan(size(XMat ,2), size(patMat,1));
-                
-                tic
-                for i = 1:size(patMat,1)
-                    thisPat = patMat(i,:);
-                    b(:,i) = regress(thisPat', XMat);
-                end
-                toc
-                
-                vol_info = S.vol_info;
-                voxel_inds = subj.masks{end}.mat;
-               
-                
-                for m = 1:length(betaMaps)
-                    
-                    outMap=  zeros(vol_info.dim);
-                    
-                    outMap(voxel_inds==1) = b(m,:);
-                    
-                    vol_info.dir = S.patRegDir;
-                    vol_info.fname = [ vol_info.dir '/' thisOnsetName '_' betaMaps{m} '.img'];
-                    
-                    S.pat{i}.map{m}.fname = vol_info.fname;
-                    
-                    if isempty(dir([vol_info.dir]))
-                        mkdir(vol_info.dir);
-                    end
-                    
-                    spm_write_vol(vol_info,outMap);
-                    
-                    fprintf('\n wrote out %s \n', vol_info.fname);
-                    
-                    d{i} = vol_info.fname;
-                end
-                
-            end
-        end
-        
+        %%
+       
         
         if S.condensePatterns
             preprocPat = get_mat(subj, 'pattern', S.preprocPatName);
@@ -440,6 +148,8 @@ else
     end
 end
 
+
+
 %% post workspace loading
 if S.eegToFMRIClassification
     
@@ -469,8 +179,9 @@ if S.eegToFMRIClassification
         allPats = interpolatedPats;
     end
     
-    idx.trialHasEstimate = ~isnan(squeeze(mean(allPats,2)))';
-    idx.trialHasEstimate = prod(double(idx.trialHasEstimate'));
+    idx.trialHasEstimateTRWise = ~isnan(squeeze(mean(allPats,2)))';
+    idx.trialHasEstimate = all(idx.trialHasEstimateTRWise');
+    
     %% load eeg data
     eeg = load(fullfile(S.eeg_dir, S.eegDataType));
     
@@ -518,7 +229,6 @@ if S.eegToFMRIClassification
     eegDat_pats = eegDatReSam';
     
     
-    
     %% validation test of BOLD patterns
     for m=1:size(allPats,1)
         
@@ -549,10 +259,23 @@ if S.eegToFMRIClassification
     
     %can you predict a button press?
     sparseX = sparse(eegDat_pats(S.goodtr,:));
-    respsNegPos = 2*idx.noResp(S.goodtr)'-1;
-    
+    respsNegPos = 2*idx.noResp(S.goodtr)'-1;    
     results.classifyButtonPressWithEEG = x_validation(sparseX,respsNegPos,S,S.ValidationLambda,'discrete', 'liblinear');
 
+    %can you predict memory state?
+    idxCorMemory = idx.cor & S.goodtr;
+    sparseX = sparse(eegDat_pats(idxCorMemory,:));
+    hitVsCRs = 2*idx.respOld(idxCorMemory)'-1;    
+    results.classifyMemoryStateWithEEG = x_validation(sparseX,hitVsCRs,S,S.ValidationLambda,'discrete', 'liblinear');
+    
+    %can you predict high-confidence memory state?
+    idxCorMemoryHC = idx.cor & S.goodtr & idx.highConf;
+    sparseX = sparse(eegDat_pats(idxCorMemoryHC,:));
+    hitVsCRs = 2*idx.respOld(idxCorMemoryHC)'-1;
+    results.classifyHCMemoryStateWithEEG = x_validation(sparseX,hitVsCRs,S,S.ValidationLambda,'discrete', 'liblinear');
+
+
+    
     if S.TRByTR
         YMat = squeeze(mean(allPats(:,:,:),2))';
     else
@@ -563,7 +286,7 @@ if S.eegToFMRIClassification
 
     
     for m=1:size(YMat,2)
-        thisModIdx = (~idx.noResp & S.goodtr & idx.TRsExist(:,m)' & idx.trialHasEstimate(:,m)');
+        thisModIdx = (~idx.noResp & S.goodtr & idx.TRsExist(:,m)' & idx.trialHasEstimate);
         Y = double(YMat(thisModIdx,m));
         X = eegDat_pats(thisModIdx, :);
         if S.normalizeFeatures
