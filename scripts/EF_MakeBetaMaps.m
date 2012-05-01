@@ -2,6 +2,8 @@ function [ output_args ] = EF_MakeBetaMaps(S, sess)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
 
+%% TO DO:  HP FILTER THE DESIGN MATRIX.  
+
 [S par] = EF_EEG_ResponseParams(subj_id);
 
 if (S.use_premade_workspace&&existWorkspace) % if we are supposed to use premade workspace, and one with the correct name exists

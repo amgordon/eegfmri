@@ -41,7 +41,7 @@ S.vol_info = spm_vol(['/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/' subj
 %S.secondaryMask = [];
 %S.secondaryMask = ['/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/' subj_id '/analysis_buttonPresses_byAmp_RTLocked/leftMotorCortex.nii'];
 %S.secondaryMask = '/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/group_analyses/analysis_hitsVsCRs_HC_Group/hitsVsCRs_HC/rleftAnG.nii';
-S.secondaryMask = ['/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/' subj_id '/analysis_hitsVsCRs_HC_bySess/LeftAnG.nii'];
+S.secondaryMask = '/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/group_analyses/analysis_hitsVsCRs_HC_bySess/analysis_hitsVsCRs_HC_Group/hitsVsCRs_HC/LeftAnG.nii';
 
 %% locking and interpolation
 S.interp = true;

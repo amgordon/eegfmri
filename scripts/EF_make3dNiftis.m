@@ -1,4 +1,4 @@
-function [] = EF_makeAnas(par)
+function [] = EF_make3dNiftis(par)
 
 d = dir(fullfile(par.rawdir, 'scan*'));
 

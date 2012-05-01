@@ -5,9 +5,7 @@ for s = 1:length(sa_new)
     if par.goodSub
         EF_wholeshebang(par, 'i');
          par = EF_Params(sa_new{s});
-         EF_wholeshebang(par, 'scg');
-         par = EF_Params(sa_new{s});
-         EF_wholeshebang(par, 'h');
+         EF_wholeshebang(par, 's');
     end
     %hasHires = exist(par.hiresimg);
     %

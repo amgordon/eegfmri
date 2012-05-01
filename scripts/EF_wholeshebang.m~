@@ -93,7 +93,7 @@ if ismember('j',flags); PM_subUtil(par); end
 % Modeling, etc
 %if ismember('o',flags); par_makemoveonsets(par, (1:3)); end  %EDITED FOR TOP 3 CONF BINS!!
     if ismember('v',flags); PM_MakeRegsLocMVPA(par); end
-    if ismember('r',flags); EF_MakeRegs_ON_SPMSess(par); end
+    if ismember('r',flags); EF_MakeRegs_ON2(par); end
     
 %for t = 1:length(par.Tasks)
     if ismember('p',flags); EF_mod_spec(par); end

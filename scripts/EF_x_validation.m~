@@ -36,7 +36,7 @@ function [out] = EF_x_validation(X,Y,S,lambda,predictionType,classifier)
                 % svr
                 trainOpts = [S.trainOptsSVM thisLStr];
                 model = svmtrain(YTrain, XTrain, trainOpts);
-                [yPred(idxTE),~,yProb(idxTE)]  = svmpredict(YTest, XTest, model);
+                [yPred(idxTE)] = svmpredict(YTest, XTest, model);
             elseif strcmp(classifier, 'ridge')
                 %ridge regression
                 trainOpts = [S.trainOptsSVM thisLStr];
@@ -44,8 +44,9 @@ function [out] = EF_x_validation(X,Y,S,lambda,predictionType,classifier)
                 yPred(idxTE) = [ones(size(XTest,1),1) XTest]*b;
             elseif strcmp(classifier, 'liblinear')
                 trainOpts = [S.trainOptsLibLinear thisLStr];
+                testOpts = 'b';
                 model = train(YTrain, XTrain, trainOpts);
-                [yPred(idxTE),~,yProb(idxTE)] = predict(YTest, XTest, model);
+                [yPred(idxTE),~,yProb(idxTE)] = predict(YTest, XTest, model, testOpts);
             end
         end
         

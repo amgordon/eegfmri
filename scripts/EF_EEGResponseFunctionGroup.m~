@@ -26,5 +26,5 @@ end
 % 
 subs = sa;
 classMatFile = fullfile(S{1}.classMatDir, saveName);
-save (classMatFile, 'S', 'res', 'subs');
+save (classMatFile, 'S', 'res', subs');
 %save (classMatFile, 'groupDat', 'S', 'res');

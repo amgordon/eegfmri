@@ -24,7 +24,7 @@ graywrimg = par.graywrimg;
 grwrflags = par.grwrflags;
 [grpth,grnm] = fileparts(graywrimg);
 grmatname        = fullfile(grpth,[grnm '_sn.mat']);
-spm_write_sn(par.ascanfiles, grmatname,grwrflags);
+spm_write_sn(vertcat(par.ascanfiles{:}), grmatname,grwrflags);
 
 fprintf('---Normalizing funcs COMPLETED for Subject %d---\n',par.subNo);
 

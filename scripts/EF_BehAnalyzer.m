@@ -25,7 +25,7 @@ for i = 1:length(par.usedVols)
     judgeResp  = [judgeResp R.sub(i).dat.theData.judgeResp];
     stimRT  = [stimRT R.sub(i).dat.theData.stimRT];
     judgeRT  = [judgeRT R.sub(i).dat.theData.judgeRT];
-    onset = [onset R.sub(i).dat.theData.onset];
+    onset = [onset R.sub(i).dat.theData.onset - par.dropvol*par.TR];
     allTrials = [allTrials R.sub(i).dat.theData.onset - par.dropvol*par.TR + par.TR*sum(par.usedVols(1:i-1))];
     sess = [sess; i*ones(size(R.sub(i).dat.theData.item))];
 end
@@ -76,6 +76,7 @@ if (prod(firstRespLengths)~=1)
    error('a firstResp element is not of length 1') 
 end
 
+idx.onsets = onset;
 idx.allTrials = allTrials;
 idx.sess = sess;
 
