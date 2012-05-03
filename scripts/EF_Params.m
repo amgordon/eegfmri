@@ -8,7 +8,7 @@ function par = EF_Params(substr)
 par.FMCorrect = 1;
 thisMachine = 'alan';
 par.subTask = 'DM';
-par.eegAnalysis = 1;
+par.eegAnalysis = 0;
 
 %% subject-specific stuff
 switch substr
@@ -129,8 +129,6 @@ switch substr
         par.sliceorder = [35:-2:1 34:-2:2];
         par.criticalERPSamples = [450: 525];
     case 'ef_032912'
-        %normalization is not good for this subject...
-        % an effect of artefacts due to the eeg cap?
         par.scansSelect = 1:5;
         par.goodEEGVols = par.scansSelect;
         par.numvols = [225 225 225 225 225];
@@ -140,8 +138,6 @@ switch substr
         par.sliceorder = [35:-2:1 34:-2:2];
         par.criticalERPSamples = [450: 525];
     case 'ef_040412'
-        %normalization is not good for this subject...
-        % an effect of artefacts due to the eeg cap?
         par.scansSelect = 1:5;
         par.goodEEGVols = par.scansSelect;
         par.numvols = [225 225 225 225 225];
@@ -151,8 +147,6 @@ switch substr
         par.sliceorder = [35:-2:1 34:-2:2];
         par.criticalERPSamples = [450: 525];
     case 'ef_040512'
-        %normalization is not good for this subject...
-        % an effect of artefacts due to the eeg cap?
         par.scansSelect = 1:5;
         par.goodEEGVols = par.scansSelect;
         par.numvols = [225 225 225 225 225];
@@ -162,8 +156,6 @@ switch substr
         par.sliceorder = [35:-2:1 34:-2:2];
         par.criticalERPSamples = [450: 525];
     case 'ef_040712'
-        %normalization is not good for this subject...
-        % an effect of artefacts due to the eeg cap?
         par.scansSelect = 1:5;
         par.goodEEGVols = par.scansSelect;
         par.numvols = [225 225 225 225 225];
@@ -173,8 +165,6 @@ switch substr
         par.sliceorder = [35:-2:1 34:-2:2];
         par.criticalERPSamples = [450: 525];
     case 'ef_040712_2'
-        %normalization is not good for this subject...
-        % an effect of artefacts due to the eeg cap?
         par.scansSelect = 1:5;
         par.goodEEGVols = par.scansSelect;
         par.numvols = [225 225 225 225 225];
@@ -184,8 +174,6 @@ switch substr
         par.sliceorder = [35:-2:1 34:-2:2];
         par.criticalERPSamples = [450: 525];
     case 'ef_041112'
-        %normalization is not good for this subject...
-        % an effect of artefacts due to the eeg cap?
         par.scansSelect = 1:5;
         par.goodEEGVols = par.scansSelect;
         par.numvols = [225 225 225 225 225];
@@ -195,8 +183,6 @@ switch substr
         par.sliceorder = [35:-2:1 34:-2:2];
         par.criticalERPSamples = [450: 525];
     case 'ef_042912'
-        %normalization is not good for this subject...
-        % an effect of artefacts due to the eeg cap?
         par.scansSelect = 1:5;
         par.goodEEGVols = par.scansSelect;
         par.numvols = [225 225 225 225 225];
@@ -206,11 +192,9 @@ switch substr
         par.sliceorder = [35:-2:1 34:-2:2];
         par.criticalERPSamples = [450: 525];
     case 'ef_050112'
-        %normalization is not good for this subject...
-        % an effect of artefacts due to the eeg cap?
-        par.scansSelect = 1:5;
+        par.scansSelect = 1:4;
         par.goodEEGVols = par.scansSelect;
-        par.numvols = [225 225 225 225 225];
+        par.numvols = [225 225 225 225];
         par.goodSub = 1;
         par.flagIt = 0;
         par.subNo = 21;
@@ -230,6 +214,7 @@ else
 end
 
 par.substr = substr;
+par.numTrials = 80;
 %%
 %----specify params-----:
 

@@ -5,6 +5,9 @@ function [S results] = EF_EEG_ResponseFunction(subj_id)
 
 % look at IPS regions instead of AnG.
 
+% replicate classification of motor cortex, with onset locked instead of
+% RT.
+
 % 1) classify memory states with EEG.  2) read out trialwise certainty.
 % 3) use this certainty as a parametric modulator.  
 

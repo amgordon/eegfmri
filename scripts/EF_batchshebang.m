@@ -1,13 +1,16 @@
-for s = 1:length(sa_new)
+for s = 5:8%length(sa_all)
     
     
-    par = EF_Params(sa_new{s});
+    par = EF_Params(sa_all{s});
     if par.goodSub
-        EF_wholeshebang(par, 'i');
-         par = EF_Params(sa_new{s});
-         EF_wholeshebang(par, 'scg');
-         par = EF_Params(sa_new{s});
-         EF_wholeshebang(par, 'h');
+%         EF_wholeshebang(par, 'i');
+%         par = EF_Params(sa_new{s});
+%         EF_wholeshebang(par, 's');
+%         par = EF_Params(sa_new{s});
+        EF_wholeshebang(par, 'lcn');
+        par = EF_Params(sa_all{s});
+        EF_wholeshebang(par, 'h');
+        EF_wholeshebang(par, 'z');
     end
     %hasHires = exist(par.hiresimg);
     %

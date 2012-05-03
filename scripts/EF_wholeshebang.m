@@ -84,7 +84,7 @@ if ismember('w',flags); PM_normSPGR(par); end
 
 if ismember('k',flags); PM_makespec_native(par); end
 
-if ismember('z',flags); PM_ArtScansToOns(par); end
+if ismember('z',flags); EF_ArtScansToOns(par); end
 
 if ismember('f',flags); PM_meanFuncs(par); end
 
