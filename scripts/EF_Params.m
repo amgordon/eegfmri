@@ -139,9 +139,9 @@ switch substr
         par.criticalERPSamples = [450: 525];
     case 'ef_040412'
         par.scansSelect = 1:5;
-        par.goodEEGVols = par.scansSelect;
+        par.goodEEGVols = 1:2;
         par.numvols = [225 225 225 225 225];
-        par.goodSub = 1;
+        par.goodSub = 0;
         par.flagIt = 0;
         par.subNo = 15;
         par.sliceorder = [35:-2:1 34:-2:2];
@@ -157,7 +157,7 @@ switch substr
         par.criticalERPSamples = [450: 525];
     case 'ef_040712'
         par.scansSelect = 1:5;
-        par.goodEEGVols = par.scansSelect;
+        par.goodEEGVols = 1:4;
         par.numvols = [225 225 225 225 225];
         par.goodSub = 1;
         par.flagIt = 0;
@@ -195,7 +195,7 @@ switch substr
         par.scansSelect = 1:4;
         par.goodEEGVols = par.scansSelect;
         par.numvols = [225 225 225 225];
-        par.goodSub = 1;
+        par.goodSub = 0;
         par.flagIt = 0;
         par.subNo = 21;
         par.sliceorder = [35:-2:1 34:-2:2];
@@ -203,7 +203,7 @@ switch substr
         
 end
 
-par.scans_to_include = par.scansSelect;
+par.scans_to_include = par.goodEEGVols;
 
 if (par.eegAnalysis)
     par.usedVols = par.numvols(par.goodEEGVols);
@@ -237,10 +237,10 @@ par.logdir = fullfile(par.subdir, 'logfiles');
 par.artrepdir = fullfile(par.subdir, 'artRepair');
 par.classmatDir = fullfile(par.fmridir, '/EEG_to_BOLD/classMats');
 par.meanfuncdir = fullfile(par.funcdir, 'meanFuncs');
-par.analysisdir = fullfile(par.subdir, 'analysis_hitsVsCRs_bySess_byHitsVsCRsAndERPCertainty');
-par.ONAnalysisType = 'hitsVsCRs_ByEEGCertainty';
-par.erpFile = fullfile(par.subdir, 'erpData', 'trialdata_evonsetlock_LP125Hz.mat');
-par.rawERPFile = fullfile(par.subdir, 'erpData', 'trialdata_RTlock.mat');
+par.analysisdir = fullfile(par.subdir, 'analysis_buttonPress');
+par.ONAnalysisType = 'buttonPresses';
+par.erpFile = fullfile(par.subdir, 'erpData', 'trial_data_LP30Hz_zscored.mat');
+par.rawERPFile = fullfile(par.subdir, 'erpData', 'trial_data_LP30Hz_zscored.mat');
 par.timeIntervalToInclude = 350:450;
 
 %% exceptions
@@ -381,10 +381,17 @@ par.bases.hrf.derivs = [0 0]; % Melina says no cost to doing time and dispersion
 par.volt = 1;%if you don't want to model volterra interactions (and you don't want to model volterra interactions) leave this at 1.
 % par.sess.scans is specified after populating list names...
 
-for i=1:length(par.numscans)
-    par.sess(i).multi = fullfile(par.analysisdir, sprintf('ons%g.mat',i));
-    par.sess(i).multi_reg = fullfile(par.analysisdir, sprintf('regs%g.mat',i));
-    par.sess(i).hpf = 128;  
+par.SPMSess = 0;
+if par.SPMSess
+    for i=par.EncScans
+        par.sess(i).multi = fullfile(par.(par.Tasks{1}).dir, sprintf('ons%g.mat',i));
+        par.sess(i).multi_reg = fullfile(par.(par.Tasks{1}).dir, sprintf('regs%g.mat',i));
+        par.sess(i).hpf = 128;
+    end
+else
+    par.sess.multi = {fullfile(par.behavdir, 'ons.mat')};
+    par.sess.multi_reg = {fullfile(par.behavdir, 'regs.mat')};
+    par.sess.hpf = 128;  % has anyone played around with this AND linear regs?
 end
 
 par.cvi = 'AR(1)'; %note that this actually gets changed to AR(0.2) in spm_fmri_spm_ui.  
@@ -408,12 +415,21 @@ par.rascanfilesPlusValidAndMean = findScans(par, 'rscan*', ~par.concatAcrossRuns
 par.wascanfiles.all = findScans(par, 'wascan*', ~par.concatAcrossRuns);
 par.wascanfiles.concat = vertcat(par.wascanfiles.all{:});
 par.wrascanfilesPlusValidAndMean.all = findScans(par, 'rascan*.nii', ~par.concatAcrossRuns);
-par.swascanfiles = findScans(par, 'swascan*.nii', ~par.concatAcrossRuns);
+par.swascanfiles = findScans(par, 'swascan*.nii', par.concatAcrossRuns);
 
 %spectral stuff
 par.bandOfInterest = 1;
 par.criticalSpectralSamples = 475:525; %95:155;
 par.rawSpectralFile = fullfile(par.subdir, 'erpData', 'spectraldata3_RT.mat');
+
+%freesurfer stuff
+par.fs_subjectsdir = '/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data_fs';
+par.fs_thisSubjectDir = fullfile(par.fs_subjectsdir, par.substr);
+par.fs_anatdir = fullfile(par.fs_subjectsdir, 'groupAnalyses', par.analysisdir);
+par.hemis = {'rh' 'lh'};
+par.fs_smooth = '6';
+par.registerFile{i} = fullfile(par.fs_thisSubjectDir, 'registerParams', ['register.dat']);
+
 end
 
 function scanfiles = findScans(par, matchstring, byRun)

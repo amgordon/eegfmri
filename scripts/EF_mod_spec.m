@@ -115,15 +115,15 @@ end;
 
 for i = 1:numel(par.sess),
     
-    sess = par.sess(i);
-    %sess.multi = fullfile(par.analysisdir, 'ons.mat');
-    %sess.multi_reg = fullfile(par.analysisdir, 'regs.mat');
+    %sess = par.sess(i);
+    sess.multi = fullfile(par.analysisdir, 'ons.mat');
+    sess.multi_reg = fullfile(par.analysisdir, 'regs.mat');
     
     
     % Image filenames
     %-------------------------------------------------------------
-    SPM.nscan(i) = par.numscans(i);
-    SPM.xY.P     = strvcat(SPM.xY.P, par.swascanfiles{i});
+    SPM.nscan(i) = sum(par.numscans);
+    SPM.xY.P     = strvcat(SPM.xY.P, par.swascanfiles);
     U = [];
 
     % Augment the singly-specified conditions with the multiple

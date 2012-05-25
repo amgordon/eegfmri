@@ -61,6 +61,9 @@ switch par.ONAnalysisType
 
         
         for i=1:length(par.sess)
+            % IS THIS REALLY THE WAY TO DO THIS???
+            % seems like correct with bad erps will by colinear with
+            % correct with good erps...
             sess(i).onsets{1} = idx.onsets(find(thisS.idxCorMemory .* (idx.sessToSPM==i)'));
             sess(i).onsets{2} = idx.onsets(find(~thisS.idxCorMemory .* (idx.old .* idx.respOld + idx.new .* idx.respNew) .* (idx.sessToSPM==i)'));
             sess(i).onsets{3} = idx.onsets(find((idx.old .* ~idx.respOld + idx.new .* ~idx.respNew)  .* (idx.sessToSPM==i)'));
@@ -74,8 +77,6 @@ switch par.ONAnalysisType
                     toRemove = [toRemove j];
                 end
             end
-            
-
             
             sess(i).pmod(1).param{1} = double(idx.old(thisS.idxCorMemory' & idx.sessToSPM==i)');
             sess(i).pmod(1).name{1} = 'hitsVsCRs';

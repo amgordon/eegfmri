@@ -101,6 +101,7 @@ elseif strcmp(par.substr, 'ef_072111')
     
     idx.old = (oldNew == 2);
     idx.new = (oldNew == 1);
+    
 elseif strcmp(par.substr, 'ef_083111')
     idx.respNew = ismember(firstResp, {'3' '4'});
     idx.respOld = ismember(firstResp, {'1' '2' '7'});
@@ -120,6 +121,7 @@ else
     idx.old = (oldNew == 1);
     idx.new = (oldNew == 2);
     
+    idx.recollect = ismember(firstResp, {'1'});
 end
 
 idx.noResp = strcmp(firstResp, 'n');

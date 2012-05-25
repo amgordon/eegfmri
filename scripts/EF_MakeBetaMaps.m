@@ -1,10 +1,12 @@
-function [ output_args ] = EF_MakeBetaMaps(S, sess)
+function [ output_args ] = EF_MakeBetaMaps(subj_id)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
 
 %% TO DO:  HP FILTER THE DESIGN MATRIX.  
 
-[S par] = EF_EEG_ResponseParams(subj_id);
+[S par] = EF_EEGResponseParams(subj_id);
+
+existWorkspace = exist(S.workspace);
 
 if (S.use_premade_workspace&&existWorkspace) % if we are supposed to use premade workspace, and one with the correct name exists
     load(S.workspace, 'subj')
@@ -30,6 +32,8 @@ pat = subj.patterns{end}.mat; %MAKE THIS MORE GENERAL
 sess = xSPMOrig.Sess.C.C;
 constant_col = ones(size(sess,1),1);
 
+
+[~, idx] = EF_BehAnalyzer(par);
 idx.sessTR = subj.selectors{1}.mat;
 
 for a = 1:length(idx.allTrials);

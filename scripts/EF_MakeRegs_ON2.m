@@ -3,7 +3,7 @@ function EF_MakeRegs_ON(par)
 [res idx] = EF_BehAnalyzer(par);
 
 %erpDat = load(par.erpFile);
-%RTERPDat = load(par.rawERPFile);
+RTERPDat = load(par.rawERPFile);
 %power = load(par.rawSpectralFile);
 
 channel_rois;
@@ -53,11 +53,15 @@ switch par.ONAnalysisType
         names = {'hits_HC' 'CRs_HC' 'hits_LC' 'CRs_LC' 'junk'};
         
     case 'buttonPresses'
-        idx.RTsExist = (RTERPDat.data.RTs~=2.1)';
+        idx.RTsExist = (RTERPDat.data.RTs~=2.1);
         
         if strcmp(par.substr, 'ef_092711') % last 3 sessions have bad erp data.
             erpidx.all = erpidx.all(1:160);
             idx.RTsExist = idx.RTsExist(1:160);
+        end
+        
+        if strcmp(par.substr, 'ef_040712') % last 3 sessions have bad erp data.
+            idx.RTsExist = idx.RTsExist(1:320);
         end
         
         onsets{1} = idx.allTrials(find(erpidx.all .* idx.RTsExist .* strcmp(idx.firstResp,'1') ));
@@ -65,8 +69,8 @@ switch par.ONAnalysisType
         onsets{3} = idx.allTrials(find(erpidx.all .* idx.RTsExist .* strcmp(idx.firstResp,'3') ));
         onsets{4} = idx.allTrials(find(erpidx.all .* idx.RTsExist .* strcmp(idx.firstResp,'4') ));
         onsets{5} = idx.allTrials(find(erpidx.all .* idx.RTsExist .* strcmp(idx.firstResp,'5') ));
-        onsets{6} = idx.allTrials(find(idx.noResp .* ~idx.fix));
-        onsets{7} = idx.allTrials(find((~idx.noResp .* ~idx.fix ) .* (~idx.RTsExist + ~erpidx.all)) );
+        onsets{6} = idx.allTrials(find(idx.noResp .* ~idx.fix)); %no response
+        onsets{7} = idx.allTrials(find((~idx.noResp .* ~idx.fix ) .* (~idx.RTsExist + ~erpidx.all)) ); % no RT recorded, or bad ERP.  
         
         names = {'finger1' 'finger2' 'finger3' 'finger4' 'finger5' 'noResp' 'junk'};     
         

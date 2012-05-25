@@ -7,9 +7,9 @@ clearvars
 %mainpath = '/Volumes/EXT_HD/ON_eegfmri/';
 
 subjs = [4 6 8:13];
-lock = 'evonset';
-foldernames = {'ef_091211','ef_091511','ef_092111','ef_092211','ef_092711',...
-    'ef_092911','ef_100511','ef_101411'};
+lock = 'RT';
+%foldernames = {'ef_040412'  'ef_040512' 'ef_040712' 'ef_041112' 'ef_042912' 'ef_050112'};
+foldernames = {'ef_091211' 'ef_091511' 'ef_092111' 'ef_092211' 'ef_092711' 'ef_092911' 'ef_100511' 'ef_101411'};
 
 savepath = '/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/';
 
@@ -92,12 +92,12 @@ for s =  1:numel(subjs);
             marks, marks+data.dur_samp(2)];
         
         %zscore each run independently.  
-        recons_signal_z = zscore(S.recons_signal')';
+        recons_signal = (S.recons_signal')';
         
         S.all_trials_clean = zeros(S.Nchan,size(S.all_trials_markers,1),dur);
         % trial matrix
         for tr = 1: size(S.all_trials_markers,1)
-            S.all_trials_clean(:,tr,:) = recons_signal_z(:,S.all_trials_markers(tr,1):S.all_trials_markers(tr,3));
+            S.all_trials_clean(:,tr,:) = recons_signal(:,S.all_trials_markers(tr,1):S.all_trials_markers(tr,3));
         end
         
         % baseline correct
@@ -136,7 +136,7 @@ for s =  1:numel(subjs);
         % trials
         data.trialdata = cat(2,data.trialdata,S.all_trials_clean);
         
-        S = [];
+        %S = [];
     end
 
     
@@ -146,6 +146,6 @@ for s =  1:numel(subjs);
     end
     %parsave([mainpath1 '/results/trialdataLP' num2str(data.LPfilter)],data,'data','-v7.3')
     parsave([mainpath1 '/results/trialdataLP125Hz'],data,'data','-v7.3')
-    parsave([savepath foldernames{s} '/erpData/trialdata_' lock 'lock_LP125Hz'],data,'data','-v7.3')
+    %parsave([savepath foldernames{s} '/erpData/trialdata_' lock 'lock_LP125Hz'],data,'data','-v7.3')
 end
 %matlabpool close
