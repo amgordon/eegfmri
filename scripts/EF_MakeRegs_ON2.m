@@ -1,40 +1,8 @@
-function EF_MakeRegs_ON(par)
+function EF_MakeRegs_ON2(par)
 
 [res idx] = EF_BehAnalyzer(par);
 
-%erpDat = load(par.erpFile);
-RTERPDat = load(par.rawERPFile);
-%power = load(par.rawSpectralFile);
-
-channel_rois;
-%combine all trials into one 400 length vector??
-
-% 
-% for i = 1:length(par.usedVols)
-%     erpidx.all_h{i} = erpDat.subj(par.subNo).run(i).all.goodtr;
-%     binsize = size(erpDat.subj(par.subNo).run(i).all.bins);
-%     
-%     erpidx.sigAll_h{i} = nan(binsize(1), binsize(2), size(erpidx.all_h{i},1));
-%     erpidx.sigAll_h{i}(:,:,erpidx.all_h{i}==1) = erpDat.subj(par.subNo).run(i).all.bins;
-%     
-%     erpidx.sigAll_mean{i} = squeeze(mean(mean(erpidx.sigAll_h{i}(:,6:8,:))));
-% end
-% % 
-% %
-% erpidx.sigAll = vertcat(erpidx.sigAll_mean{:});
-% erpidx.all = vertcat(erpidx.all_h{:})';
-% 
-
-eeg_fmri_on_subject_info;
-erpidx.all = ones(size(idx.allTrials));
-erpidx.all(S.badtr{par.subNo}) = 0;
-
-
-if strcmp(par.substr, 'ef_072111')
-    erpidx.all = [erpidx.all 0];
-    erpidx.sigAll = [erpidx.sigAll; 0];
-end
-
+erpidx = EF_extractERPVec(par);
 
 
 switch par.ONAnalysisType
@@ -49,8 +17,9 @@ switch par.ONAnalysisType
         onsets{2} = idx.allTrials(find(idx.new .* idx.respNew .* idx.highConf));
         onsets{3} = idx.allTrials(find(idx.old .* idx.respOld .* idx.lowConf));
         onsets{4} = idx.allTrials(find(idx.new .* idx.respNew .* idx.lowConf));
-        onsets{5} = idx.allTrials(find(idx.old .* ~idx.respOld + idx.new .* ~idx.respNew));
-        names = {'hits_HC' 'CRs_HC' 'hits_LC' 'CRs_LC' 'junk'};
+        onsets{5} = idx.allTrials(find(idx.old .* idx.recollect));
+        onsets{6} = idx.allTrials(find(idx.old .* ~idx.respOld + idx.new .* ~idx.respNew));
+        names = {'hits_HC' 'CRs_HC' 'hits_LC' 'CRs_LC' 'Rem_Cor' 'junk'};
         
     case 'buttonPresses'
         idx.RTsExist = (RTERPDat.data.RTs~=2.1);
@@ -96,7 +65,29 @@ switch par.ONAnalysisType
         
         names = {'hits' 'CRs' 'misses' 'FAs' 'junk'};
         
-
+     case 'hitsVsCRs_byERP_multibins'
+        
+        onsets{1} = idx.allTrials(find(erpidx.all .* idx.old .* idx.respOld ));
+        onsets{2} = idx.allTrials(find(erpidx.all .* idx.new .* idx.respNew ));
+        onsets{3} = idx.allTrials(find(erpidx.all .* idx.old .* idx.respNew ));
+        onsets{4} = idx.allTrials(find(erpidx.all .* idx.new .* idx.respOld ));
+        onsets{5} = setdiff(idx.allTrials(find(idx.old + idx.new)), [onsets{1:4}]);
+        
+        ERPAmp_all = erpidx.sigAll(find(erpidx.all .* idx.cor ));
+        ERPAmp_Hits = erpidx.sigAll(find(erpidx.all .* idx.cor .* idx.old ));
+        ERPAmp_CRs = erpidx.sigAll(find(erpidx.all .* idx.cor .* idx.new ));
+        
+        for i=1:length(par.EEGBins)
+            pmod(1).param{i} = ERPAmp_Hits{i};
+            pmod(1).name{i} = [ERPAmp_Hits num2str(i)];
+            pmod(1).poly{i} = 1;
+            
+            pmod(2).param{i} = ERPAmp_CRs{i};
+            pmod(2).name{i} = [ERPAmp_CRs num2str(i)];
+            pmod(2).poly{i} = 1;
+        end
+        
+        names = {'hits' 'CRs' 'misses' 'FAs' 'junk'};
     case 'hitsVsCRs_byERP_HC'
           
         onsets{1} = idx.allTrials(find(erpidx.all .* idx.old .* idx.respOld .* idx.highConf));

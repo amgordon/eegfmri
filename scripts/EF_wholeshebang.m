@@ -47,7 +47,7 @@ end
 if isstruct(subpar) % if it is par_params struct
     par = subpar;
 else % assume subject string
-    par = EF_params(subpar);
+    par = EF_Params(subpar);
 end
 
 if ~exist('flags', 'var')
@@ -78,7 +78,7 @@ if ismember('g',flags); PM_segnorm(par); end
 
 if ismember('n',flags); EF_normfuncs(par); end
 
-if ismember('h',flags); PM_smoothfuncs(par); end
+if ismember('h',flags); EF_smoothfuncs(par); end
 
 if ismember('w',flags); PM_normSPGR(par); end
 
@@ -92,12 +92,12 @@ if ismember('j',flags); PM_subUtil(par); end
 
 % Modeling, etc
 %if ismember('o',flags); par_makemoveonsets(par, (1:3)); end  %EDITED FOR TOP 3 CONF BINS!!
-    if ismember('v',flags); PM_MakeRegsLocMVPA(par); end
+    if ismember('v',flags); EF_EEG_EstimateIndividualBetas(par); end
     if ismember('r',flags); EF_MakeRegs_ON2(par); end
     
 %for t = 1:length(par.Tasks)
     if ismember('p',flags); EF_mod_spec(par); end
-    if ismember('e',flags); PM_mod_est(par); end
+    if ismember('e',flags); EF_mod_est(par); end
     if ismember('t',flags); EF_setcontrasts(par); end
 %end
 

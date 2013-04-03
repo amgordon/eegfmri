@@ -24,18 +24,16 @@ for i=1:length(sa)
     reconCommand = ['recon-all -i ' par.hiresimg ' -s ' par.substr ' -all'];
     if ismember('r', flags), unix (reconCommand); end
     
-    % register a functional volume to the 256 x 256 x 256 1mm anatomical images.
-    % Output register.dat parameter file
-    
-    
     for j=1:length(par.mapToPutOnSurface)
-
-        registerCommand = ['bbregister --s ' par.substr ' --mov ' par.mapToPutOnSurface ' --init-fsl --reg ' par.registerFile ' --bold'];
+        
+        % register a functional volume to the 256 x 256 x 256 1mm anatomical images.
+        % Output register.dat parameter file
+        registerCommand = ['bbregister --s ' par.substr ' --mov ' par.mapToPutOnSurface ' --init-fsl --reg ' par.registerFile ' --bold --epimask'];
         if ismember('b', flags), unix (registerCommand); end
         
         for h=1:length(par.hemis)
             %put a con volume onto a group surface
-            vol2SurfCommand = ['mri_vol2surf --mov ' par.mapToPutOnSurface ' --reg ' par.registerFile ' --hemi ' par.hemis{h} ' --trgsubject fsaverage --projfrac avg --o ' par.registeredSurface];
+            vol2SurfCommand = ['mri_vol2surf --mov ' par.mapToPutOnSurface ' --reg ' par.registerFile ' --hemi ' par.hemis{h} ' --trgsubject fsaverage --projfrac-avg 0 1 .1 --o ' par.registeredSurface];
             if ismember('v', flags), unix (vol2SurfCommand); end
             
             % smooth statistical map
@@ -48,18 +46,24 @@ for i=1:length(sa)
 end
 
 %% group level analyses
-%cd /Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/ef_091511/functional/scan01/ascan01_0006.nii
-thisSPM = load(par.analysisDir, 'SPM.mat');
-for j=1:length(gpar.contrast)
-    for h=1:length(gpar.contrast(j).hemi)
-        
-        subsConcat = horzcat(gpar.contrast(j).hemi(h).sub{:});
-        groupMapName = thisSPM.xCon(j).name;
-        groupMapFile = fullfile(par.fs_anatdir, groupMapName);
-        concatCommand = ['mri_concat ' subsConcat ' --o ' fullfile(groupMapFile, [par.hemis{h} '.' groupMapName]) ];
-        unix(concatCommand);
-        
-        mri_glmfit --y lh.allsubs.avg.mgz --osgm --glmdir . --surf fsaverage lh --cortex
-        
+
+if ismember('g', flags)
+    thisSPM = load(par.analysisDir, 'SPM.mat');
+    for j=1:length(gpar.contrast)
+        for h=1:length(gpar.contrast(j).hemi)
+            
+            subsConcat = horzcat(gpar.contrast(j).hemi(h).sub{:});
+            groupMapName = [hemis{h} '_' thisSPM.xCon(j).name];
+            groupMapFile = fullfile(par.fs_analysisdir, groupMapName);
+            
+            %concatenate across subjects
+            concatCommand = ['mri_concat ' subsConcat ' --o ' fullfile(groupMapFile, groupMapName) ];
+            unix(concatCommand);
+            
+            %run the glm
+            glmCommand = ['--y ' groupMapName ' --osgm --glmdir ' groupMapFile ' --surf fsaverage --cortex'];
+            unix(glmCommand);
+            
+        end
     end
 end

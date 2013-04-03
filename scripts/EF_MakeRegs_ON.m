@@ -2,23 +2,23 @@ function EF_MakeRegs_ON(par)
 
 [res idx] = EF_BehAnalyzer(par);
 
-erpDat = load(par.erpFile);
-
-%combine all trials into one 400 length vector??
-
+% erpDat = load(par.erpFile);
 % 
-for i = 1:length(par.usedVols)
-    erpidx.all_h{i} = erpDat.subj(par.subNo).run(i).all.goodtr;
-    binsize = size(erpDat.subj(par.subNo).run(i).all.bins);
-    
-    erpidx.sigAll_h{i} = nan(binsize(1), binsize(2), size(erpidx.all_h{i},1));
-    erpidx.sigAll_h{i}(:,:,erpidx.all_h{i}==1) = erpDat.subj(par.subNo).run(i).all.bins;
-    
-    erpidx.sigAll_mean{i} = squeeze(mean(mean(erpidx.sigAll_h{i}(:,6:8,:))));
-end
+% %combine all trials into one 400 length vector??
 % 
- erpidx.sigAll = vertcat(erpidx.sigAll_mean{:});
- erpidx.all = vertcat(erpidx.all_h{:})';
+% % 
+% for i = 1:length(par.usedVols)
+%     erpidx.all_h{i} = erpDat.subj(par.subNo).run(i).all.goodtr;
+%     binsize = size(erpDat.subj(par.subNo).run(i).all.bins);
+%     
+%     erpidx.sigAll_h{i} = nan(binsize(1), binsize(2), size(erpidx.all_h{i},1));
+%     erpidx.sigAll_h{i}(:,:,erpidx.all_h{i}==1) = erpDat.subj(par.subNo).run(i).all.bins;
+%     
+%     erpidx.sigAll_mean{i} = squeeze(mean(mean(erpidx.sigAll_h{i}(:,6:8,:))));
+% end
+% % 
+%  erpidx.sigAll = vertcat(erpidx.sigAll_mean{:});
+%  erpidx.all = vertcat(erpidx.all_h{:})';
 % 
 if strcmp(par.substr, 'ef_072111')
     erpidx.all = [erpidx.all 0];

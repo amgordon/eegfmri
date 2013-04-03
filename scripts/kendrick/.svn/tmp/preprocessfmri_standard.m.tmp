@@ -1,0 +1,175 @@
+% history:
+% 2011/04/13 - add new input <epiignoremcvol>
+% 2011/04/11 - allow fieldmapfiles to be the cached .mat files.
+% 2011/04/04 - previously, the TR being saved in the .nii files was 1.  we now save
+%              the actual TR value (as given by <epitr>) into the .nii files.
+
+% this file is called by preprocessfmri_standardscript.m
+
+if isempty(fieldmapfiles)
+  fprintf('no fieldmapfiles were specified (VERIFY THAT THIS IS CORRECT).\n\n');
+else
+  fprintf('the following are the fieldmapfiles that we found (VERIFY THAT THIS IS CORRECT):\n');
+  cellfun(@(x) fprintf(['  ' x '\n']),fieldmapfiles);
+  fprintf('\n');
+end
+
+if isempty(inplanefilenames)
+  fprintf('no inplanefilenames were specified (VERIFY THAT THIS IS CORRECT).\n\n');
+else
+  fprintf('the following are the inplanefilenames that we found (VERIFY THAT THIS IS CORRECT):\n');
+  cellfun(@(x) fprintf(['  ' x '\n']),inplanefilenames);
+  fprintf('\n');
+end
+
+if isempty(epifilenames)
+  fprintf('no epifilenames were specified (VERIFY THAT THIS IS CORRECT).\n\n');
+else
+  fprintf('the following are the epifilenames that we found (VERIFY THAT THIS IS CORRECT):\n');
+  cellfun(@(x) fprintf(['  ' x '\n']),epifilenames);
+  fprintf('\n');
+end
+
+reportmemoryandtime;
+
+% load Inplane DICOM directories
+fprintf('loading inplane data...');
+[inplanes,inplanesizes,inplaneinplanematrixsizes] = dicomloaddir(inplanefilenames,'i%06d.dcm');
+if exist('inplanehackfun','var')  % HRM. HACKY.
+  inplanes = cellfun(inplanehackfun,inplanes,'UniformOutput',0);
+end
+fprintf('done (loading inplane data).\n');
+
+reportmemoryandtime;
+
+% reconstruct and prepare spiral fieldmaps [note that we save results to .mat files and attempt to re-use the results if they exist]
+  % NOTE: making this parallel is non-trivial it seems due to weird errors.  but it seems fast enough.
+fprintf('loading fieldmap data...');
+fieldmaps = {};
+fieldmapbrains = {};
+for p=1:length(fieldmapfiles)
+
+  % if it is a .mat file, load from it
+  if isequal(getextension(fieldmapfiles{p}),'.mat')
+    load(fieldmapfiles{p},'fieldmap','fieldmapbrain');
+
+  % if a .mat file exists, load from it
+  elseif exist([fieldmapfiles{p} '.mat'],'file')
+    load([fieldmapfiles{p} '.mat'],'fieldmap','fieldmapbrain');
+
+  % otherwise, we have to recon it
+  else
+  
+    % recon
+    [fieldmap,fieldmapbrain] = reconstructspiralfieldmap(fieldmapfiles{p});
+    fieldmap = fieldmap / (1/(fieldmapdeltate/1000)/2) * pi;  % convert to range [-pi,pi]
+    
+    % save results
+    save([fieldmapfiles{p} '.mat'],'fieldmap','fieldmapbrain');
+  
+  end
+
+  % if fieldmaporient is empty, then use interaction to get the values
+  if isempty(fieldmaporient)
+    figure; setfigurepos([100 100 400 200]);
+    fieldmaporient = [0 0 0];
+    while 1
+      fun = @(x) flipdims(rotatematrix(x,1,2,fieldmaporient(1)),fieldmaporient(2:3));
+      subplot(1,2,1); imagesc(inplanes{1}(:,:,round(end/2))); title('Inplane');
+      subplot(1,2,2); imagesc(feval(fun,fieldmapbrain(:,:,round(end/2)))); title('Fieldmap brain');
+      temp = input('We need to match the orientation of the fieldmap to the orientation of the in-plane.\nTo do this, we can apply CCW rotations and then flip the first and second dimensions as necessary.\nPlease specify a 3-element vector [A B C] where A is the number of CCW rotations to apply, B is whether to flip the first dimension, and C is whether to flip the second dimension (e.g. [1 1 0]).\nJust press RETURN if you are happy with how the current results are.\n--> ');
+      if isempty(temp)
+        fprintf('OK, the final value for <fieldmaporient> is %s.\n',mat2str(fieldmaporient));
+        break;
+      end
+      fieldmaporient = temp;
+    end
+  end
+
+  % rotate and flip based on fieldmaporient
+  fun = @(x) flipdims(rotatematrix(x,1,2,fieldmaporient(1)),fieldmaporient(2:3));
+  fieldmap = feval(fun,fieldmap);
+  fieldmapbrain = feval(fun,fieldmapbrain);
+
+  % record it
+  fieldmaps{p} = fieldmap;
+  fieldmapbrains{p} = fieldmapbrain;
+  clear fieldmap fieldmapbrain;
+  
+end
+fprintf('done (loading fieldmap data).\n');
+
+reportmemoryandtime;
+
+% load EPI DICOM directories
+fprintf('loading EPI data...');
+if ~exist('epinumonly','var')
+  epinumonly = [];
+end
+if ~exist('epidesiredinplanesize','var')
+  epidesiredinplanesize = [];
+end
+if ~exist('epiphasemode','var')
+  epiphasemode = [];
+end
+[epis,episizes,epiinplanematrixsizes] = dicomloaddir(epifilenames,[],epinumonly,epidesiredinplanesize,epiphasemode); % 'i%06d.dcm' replaced with [] by AG 061011, to allow for MRDC files
+%         epis = {}; episizes = {};
+%         for p=1:length(epifilenames)
+%           temp = readFileNifti(epifilenames{p});
+%           epis{p} = double(temp.data);
+%           episizes{p} = temp.pixdim(1:3);
+%           clear temp;
+%         end
+%         epiindex = feval(epiindexfun,epis);
+fprintf('done (loading EPI data).\n');
+
+reportmemoryandtime;
+
+% interactive prompt for mcmask
+if iscell(mcmask) && isempty(mcmask)
+  [d,tempmn,tempsd] = defineellipse3d(epis{1}(:,:,:,1),[],0);
+  mcmask = {tempmn tempsd};
+  fprintf('mcmask is determined to be %s.\n',cell2str(mcmask));
+end
+
+% do the pre-processing
+  % defaults for backwards-compatibility:
+  if ~exist('maskoutnans','var')
+    maskoutnans = [];
+  end
+  if ~exist('epiignoremcvol','var')
+    epiignoremcvol = [];
+  end
+fprintf('calling preprocessfmri...');
+[epis,finalepisize,validvol,meanvol] = preprocessfmri(figuredir,inplanes,inplanesizes, ...
+  {fieldmaps fieldmaptimes},fieldmapbrains,fieldmapsizes,fieldmapdeltate,fieldmapunwrap,fieldmapsmoothing, ...
+  epis,episizes{1},epiinplanematrixsizes{1},epitr,episliceorder, ...
+  epiphasedir,epireadouttime,epifieldmapasst, ...
+  numepiignore,motionreference,motioncutoff,extratrans,targetres, ...
+  sliceshiftband,fmriqualityparams,fieldmaptimeinterp,mcmask,maskoutnans,epiignoremcvol);
+fprintf('done (calling preprocessfmri).\n');
+
+reportmemoryandtime;
+
+% save it
+fprintf('saving data...');
+mkdirquiet(stripfile(savefile));
+for p=1:length(epis)
+  if iscell(targetres) && length(targetres) >= 4 && targetres{4}==1
+    fprintf('for EPI run %d, we have %d time points and %d valid voxels.\n',p,size(epis{p},4),size(epis{p},1));
+    savebinary(sprintf(savefile,p),'int16',squish(int16(epis{p}),3)');  % special flattened format: time x voxels
+  else
+    save_nii(settr_nii(make_nii(int16(epis{p}),finalepisize),epitr),sprintf(savefile,p));
+  end
+end
+if ~isempty(savefileB)
+  mkdirquiet(stripfile(savefileB));
+  save_nii(make_nii(int16(validvol),finalepisize),savefileB);
+end
+if ~isempty(savefileC)
+  mkdirquiet(stripfile(savefileC));
+  save_nii(make_nii(int16(meanvol),finalepisize),savefileC);
+end
+fprintf('done (saving data).\n');
+
+reportmemoryandtime;

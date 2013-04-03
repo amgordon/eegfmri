@@ -26,7 +26,7 @@ savepath = '/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/';
 for s =  1:numel(subjs);    
     sub = subjs(s);
     
-    mainpath1 = fullfile('/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/', foldernames{s}, '/erpData/');
+    mainpath1 = fullfile('/biac4/wagner/biac3/wagner5/alan/eegfmri/fmri_data/', foldernames{s}, '/erpData/');
    
    % mainpath1 = ['/Volumes/EXT_HD/ON_eegfmri/s' num2str(sub) '/clean_data2/'];
    % mainpath2 = ['/Volumes/EXT_HD2/ON_eegfmri/s' num2str(sub) '/clean_data2/'];

@@ -56,6 +56,7 @@ idx.ERP = ~cellfun('isempty', strfind(regNames,'ERPAmp'));
 idx.all = ~cellfun('isempty', strfind(regNames,'all'));
 idx.eegCert = ~cellfun('isempty', strfind(regNames,'EEGCert'));
 idx.hitsVsCRs = ~cellfun('isempty', strfind(regNames,'hitsVsCRs'));
+idx.recollect = ~cellfun('isempty', strfind(regNames,'Rem_Cor'));
 
 idx.finger1 = ~cellfun('isempty', strfind(regNames,'finger1'));
 idx.finger2 = ~cellfun('isempty', strfind(regNames,'finger2'));
@@ -71,6 +72,12 @@ switch par.ONAnalysisType
         con.hitsVsCRs_HC = idx.HC .* (idx.hits - idx.CRs);
         con.hitsVsCRs_LC = idx.LC .* (idx.hits - idx.CRs);
         con.hitsVsCRs_all = idx.hits - idx.CRs;
+        con.RecVsHitsHC = idx.recollect - (idx.hits .* idx.HC);
+        con.RecVsCRsHC = idx.recollect - (idx.HC .* idx.CRs);
+        con.HC_vs_LC = (idx.HC - idx.LC);
+        con.hits_HC_vs_LC = idx.hits .* (idx.HC - idx.LC);
+        con.linearTrendRGreaterThanHCHits = 2*idx.recollect + 1*idx.HC.*idx.hits + -1*idx.LC.*idx.CRs + -2*idx.HC.*idx.CRs;
+        con.linearTrendREqualsHCHits = 1.5*idx.recollect + 1.5*idx.HC.*idx.hits + -1*idx.LC.*idx.CRs + -2*idx.HC.*idx.CRs;
     case 'hitsVsCRs_ByEEGCertainty'
         con.corTrialsByEEGCert = idx.eegCert;
         con.corTrialsHitsVsCRs = idx.hitsVsCRs;

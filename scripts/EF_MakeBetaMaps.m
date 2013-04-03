@@ -128,8 +128,11 @@ for a = 1:length(idx.allTrials);
         outMap(voxel_inds==1) = b(m,:);
         
         vol_info.dir = S.patRegDir;
-        vol_info.fname = [ vol_info.dir '/' thisOnsetName '_' betaMaps{m} '.img'];
-        
+        if strcmp(S.bf, 'FIR')
+            vol_info.fname = [ vol_info.dir '/' thisOnsetName '_' betaMaps{m} '.img'];
+        else
+            vol_info.fname = [ vol_info.dir '/' thisOnsetName '.img'];
+        end
         S.pat{i}.map{m}.fname = vol_info.fname;
         
         if isempty(dir([vol_info.dir]))

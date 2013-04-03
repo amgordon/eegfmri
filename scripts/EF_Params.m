@@ -8,8 +8,15 @@ function par = EF_Params(substr)
 par.FMCorrect = 1;
 thisMachine = 'alan';
 par.subTask = 'DM';
-par.eegAnalysis = 0;
+par.eegAnalysis = 1;
 
+if isnumeric(substr) 
+    substr = EF_num2Sub(substr);
+end
+
+if iscell(substr) 
+    substr = substr{1};
+end
 %% subject-specific stuff
 switch substr
      case 'ef_071411'
@@ -200,7 +207,60 @@ switch substr
         par.subNo = 21;
         par.sliceorder = [35:-2:1 34:-2:2];
         par.criticalERPSamples = [450: 525];
-        
+    case 'ef_111512'
+        par.scansSelect = 1:5;
+        par.goodEEGVols = par.scansSelect;
+        par.numvols = [225 225 225 225 225];
+        par.goodSub = 1;
+        par.flagIt = 0;
+        par.subNo = 22;
+        par.sliceorder = [35:-2:1 34:-2:2];
+        par.criticalERPSamples = [450: 525];
+    case 'ef_111412_1'
+        par.scansSelect = 1:5;
+        par.goodEEGVols = par.scansSelect;
+        par.numvols = [225 225 225 225 225];
+        par.goodSub = 1;
+        par.flagIt = 0;
+        par.subNo = 23;
+        par.sliceorder = [35:-2:1 34:-2:2];
+        par.criticalERPSamples = [450: 525];
+    case 'ef_111412_2'
+        par.scansSelect = 1:5;
+        par.goodEEGVols = par.scansSelect;
+        par.numvols = [225 225 225 225 225];
+        par.goodSub = 1;
+        par.flagIt = 0;
+        par.subNo = 24;
+        par.sliceorder = [35:-2:1 34:-2:2];
+        par.criticalERPSamples = [450: 525];
+    case 'ef_111112_1'
+        par.scansSelect = 1:5;
+        par.goodEEGVols = par.scansSelect;
+        par.numvols = [225 225 225 225 225];
+        par.goodSub = 1;
+        par.flagIt = 0;
+        par.subNo = 25;
+        par.sliceorder = [35:-2:1 34:-2:2];
+        par.criticalERPSamples = [450: 525];
+    case 'ef_111112_2'
+        par.scansSelect = 1:5;
+        par.goodEEGVols = par.scansSelect;
+        par.numvols = [225 225 225 225 225];
+        par.goodSub = 1;
+        par.flagIt = 0;
+        par.subNo = 26;
+        par.sliceorder = [35:-2:1 34:-2:2];
+        par.criticalERPSamples = [450: 525];
+    case 'ef_111112_3'
+        par.scansSelect = 1:5;
+        par.goodEEGVols = par.scansSelect;
+        par.numvols = [225 225 225 225 225];
+        par.goodSub = 1;
+        par.flagIt = 0;
+        par.subNo = 27;
+        par.sliceorder = [35:-2:1 34:-2:2];
+        par.criticalERPSamples = [450: 525];   
 end
 
 par.scans_to_include = par.goodEEGVols;
@@ -220,7 +280,7 @@ par.numTrials = 80;
 
 % ---------Directory names----------
 if strcmp(thisMachine, 'alan')
-    par.exptdir = '/Users/alangordon/mounts/w5/alan/eegfmri/';
+    par.exptdir = '/biac4/wagner/biac3/wagner5/alan/eegfmri/';
 elseif strcmp(thisMachine, 'jesse')
     par.exptdir = '/Users/Jesse/w5/biac3/wagner5/alan/eegfmri/';
 end
@@ -237,11 +297,12 @@ par.logdir = fullfile(par.subdir, 'logfiles');
 par.artrepdir = fullfile(par.subdir, 'artRepair');
 par.classmatDir = fullfile(par.fmridir, '/EEG_to_BOLD/classMats');
 par.meanfuncdir = fullfile(par.funcdir, 'meanFuncs');
-par.analysisdir = fullfile(par.subdir, 'analysis_buttonPress');
-par.ONAnalysisType = 'buttonPresses';
-par.erpFile = fullfile(par.subdir, 'erpData', 'trial_data_LP30Hz_zscored.mat');
-par.rawERPFile = fullfile(par.subdir, 'erpData', 'trial_data_LP30Hz_zscored.mat');
-par.timeIntervalToInclude = 350:450;
+par.analysisdir = fullfile(par.subdir, 'analysis_hitsVsCRs_by_LPIAmp_multibin');
+par.ONAnalysisType = 'hitsVsCRs_byERP';
+par.erpFile = fullfile(par.subdir, 'erpData/results/trial_data_LP30Hz_evonset.mat');
+par.rawERPFile = fullfile(par.subdir, 'erpData/results/trial_data_LP30Hz_evonset.mat');
+par.TOI = 350:450;
+par.ChOI = 'parietal.LPI';
 
 %% exceptions
 
@@ -389,8 +450,8 @@ if par.SPMSess
         par.sess(i).hpf = 128;
     end
 else
-    par.sess.multi = {fullfile(par.behavdir, 'ons.mat')};
-    par.sess.multi_reg = {fullfile(par.behavdir, 'regs.mat')};
+    par.sess.multi = fullfile(par.analysisdir, 'ons.mat');
+    par.sess.multi_reg = {fullfile(par.analysisdir, 'regs.mat')};
     par.sess.hpf = 128;  % has anyone played around with this AND linear regs?
 end
 
@@ -399,23 +460,25 @@ par.cvi = 'AR(1)'; %note that this actually gets changed to AR(0.2) in spm_fmri_
 % by simply putting a number in here, but I haven't played around with it
 par.global = 'None';
 % explicit mask
-par.mask = {};%{par.tswmaskimg};
+par.mask = {'/biac4/wagner/biac3/wagner5/alan/perceptMnemonic/fmri_data/groupMask/inclusive_mask.img'};
 
 % contrast vars
 par.constat = 'T';
 
 %par.srascanfiles = findScans(par, 'sRrun*.mat');
 %par.rascanfiles = findScans(par, 'Rrun*.nii');
-par.scanfiles  = findScans(par, 'scan*.nii', ~par.concatAcrossRuns);
-par.ascanfiles  = findScans(par, 'ascan*.nii', ~par.concatAcrossRuns);
-par.rascanfiles  = findScans(par, 'rascan*.nii', ~par.concatAcrossRuns);
-par.srscanfiles  = findScans(par, 'srscan*.nii', ~par.concatAcrossRuns);
-par.srascanfiles  = findScans(par, 'srascan*.nii', ~par.concatAcrossRuns);
-par.rascanfilesPlusValidAndMean = findScans(par, 'rscan*', ~par.concatAcrossRuns);
-par.wascanfiles.all = findScans(par, 'wascan*', ~par.concatAcrossRuns);
-par.wascanfiles.concat = vertcat(par.wascanfiles.all{:});
-par.wrascanfilesPlusValidAndMean.all = findScans(par, 'rascan*.nii', ~par.concatAcrossRuns);
-par.swascanfiles = findScans(par, 'swascan*.nii', par.concatAcrossRuns);
+ par.scanfiles  = findScans(par, 'scan*.nii', ~par.concatAcrossRuns);
+ par.ascanfiles  = findScans(par, 'ascan*.nii', ~par.concatAcrossRuns);
+ par.rascanfiles  = findScans(par, 'rascan*.nii', ~par.concatAcrossRuns);
+ par.wascanfiles  = findScans(par, 'wascan*.nii', par.concatAcrossRuns);
+ par.swascanfiles  = findScans(par, 'swascan*.nii', par.concatAcrossRuns);
+% par.srscanfiles  = findScans(par, 'srscan*.nii', ~par.concatAcrossRuns);
+% par.srascanfiles  = findScans(par, 'srascan*.nii', ~par.concatAcrossRuns);
+% par.rascanfilesPlusValidAndMean = findScans(par, 'rscan*', ~par.concatAcrossRuns);
+% par.wascanfiles.all = findScans(par, 'wascan*', ~par.concatAcrossRuns);
+% par.wascanfiles.concat = vertcat(par.wascanfiles.all{:});
+ %par.wrascanfilesPlusValidAndMean.all = findScans(par, 'rascan*.nii', ~par.concatAcrossRuns);
+ %par.swascanfiles = findScans(par, 'swascan*.nii', par.concatAcrossRuns);
 
 %spectral stuff
 par.bandOfInterest = 1;
@@ -423,7 +486,7 @@ par.criticalSpectralSamples = 475:525; %95:155;
 par.rawSpectralFile = fullfile(par.subdir, 'erpData', 'spectraldata3_RT.mat');
 
 %freesurfer stuff
-par.fs_subjectsdir = '/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data_fs';
+par.fs_subjectsdir = '/biac4/wagner/biac3/wagner5/alan/eegfmri/fmri_data_fs';
 par.fs_thisSubjectDir = fullfile(par.fs_subjectsdir, par.substr);
 par.fs_anatdir = fullfile(par.fs_subjectsdir, 'groupAnalyses', par.analysisdir);
 par.hemis = {'rh' 'lh'};

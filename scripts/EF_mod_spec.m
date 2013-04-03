@@ -116,9 +116,9 @@ end;
 for i = 1:numel(par.sess),
     
     %sess = par.sess(i);
-    sess.multi = fullfile(par.analysisdir, 'ons.mat');
-    sess.multi_reg = fullfile(par.analysisdir, 'regs.mat');
-    
+    sess.multi = par.sess.multi;
+    sess.multi_reg = par.sess.multi_reg;
+    %fullfile(par.analysisdir, 'ons.mat');
     
     % Image filenames
     %-------------------------------------------------------------
@@ -332,8 +332,7 @@ fprintf('%30s\n','...SPM.mat saved')                     %-#
 
 cd(origdir); % Change back dir
 
-%print out ps
-par_print(par);
+
 
 
 fprintf('Done\n')

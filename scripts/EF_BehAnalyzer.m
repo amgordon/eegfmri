@@ -82,15 +82,17 @@ idx.sess = sess;
 
 idx.firstResp = firstResp;
 
-if strcmp(par.substr, 'ef_071411')
+if ismember(par.substr, {'ef_071411' 'ef_111512' 'ef_111412_1' 'ef_111412_2' 'ef_111112_1' 'ef_111112_2' 'ef_111112_3'} )
     idx.respNew = ismember(firstResp, {'6' '7'});
-    idx.respOld = ismember(firstResp, {'4' '8' '9'});
+    idx.respOld = ismember(firstResp, {'4' '8' '9' 'a'});
     
-    idx.highConf = ismember(firstResp, {'4' '6' '9'});
+    idx.highConf = ismember(firstResp, {'4' '6' '9' 'a'});
     idx.lowConf = ismember(firstResp, {'7' '8'});
     
     idx.old = (oldNew == 2);
     idx.new = (oldNew == 1);
+    
+    idx.recollect = ismember(firstResp, {'4' 'a'});
     
 elseif strcmp(par.substr, 'ef_072111')
     idx.respNew = ismember(firstResp, {'1' '2'});
@@ -102,6 +104,8 @@ elseif strcmp(par.substr, 'ef_072111')
     idx.old = (oldNew == 2);
     idx.new = (oldNew == 1);
     
+    idx.recollect = ismember(firstResp, {'9'});
+    
 elseif strcmp(par.substr, 'ef_083111')
     idx.respNew = ismember(firstResp, {'3' '4'});
     idx.respOld = ismember(firstResp, {'1' '2' '7'});
@@ -111,6 +115,8 @@ elseif strcmp(par.substr, 'ef_083111')
     
     idx.old = (oldNew == 2);
     idx.new = (oldNew == 1);
+    
+    idx.recollect = ismember(firstResp, {'7'});
 else
     idx.respNew = ismember(firstResp, {'5' '4'});
     idx.respOld = ismember(firstResp, {'1' '2' '3'});
@@ -124,6 +130,7 @@ else
     idx.recollect = ismember(firstResp, {'1'});
 end
 
+idx.item = item;
 idx.noResp = strcmp(firstResp, 'n');
 idx.fix = strcmp(item, '+')';
 idx.cor = idx.old .* idx.respOld + idx.new .* idx.respNew;
@@ -131,13 +138,16 @@ idx.cor = idx.old .* idx.respOld + idx.new .* idx.respNew;
 idx.legitResp = idx.respOld + idx.respNew;
 idx.memoryTrials = idx.old + idx.new;
 
+idx.conf = 1*(idx.highConf.*idx.respNew) + 2*(idx.lowConf.*idx.respNew) ...
+    + 3*(idx.lowConf.*idx.respOld) + 4*(idx.highConf.*idx.respOld.*~idx.recollect) + 5*(idx.recollect);
+
 res.pctCor = sum(idx.cor) / sum(idx.legitResp);
 res.pctLegit = sum(idx.legitResp) / sum(idx.memoryTrials);
 
-res.pctCorRem = sum(strcmp(firstResp, '1') .* idx.old) / sum(strcmp(firstResp, '1'));
-res.pctCorHiConfOld = sum(strcmp(firstResp, '2') .* idx.old) / sum(strcmp(firstResp, '2'));
-res.pctCorLoConfOld = sum(strcmp(firstResp, '3') .* idx.old) / sum(strcmp(firstResp, '3'));
-res.pctCorLoConfNew = sum(strcmp(firstResp, '4') .* idx.new) / sum(strcmp(firstResp, '4'));
-res.pctCorHiConfNew = sum(strcmp(firstResp, '5') .* idx.new) / sum(strcmp(firstResp, '5'));
+res.pctCorRem = sum(idx.recollect .* idx.cor ) / sum(idx.recollect);
+res.pctCorHiConfOld = sum(idx.highConf .* idx.cor .* idx.respOld) / sum(idx.respOld .* idx.highConf);
+res.pctCorLoConfOld = sum(idx.lowConf .* idx.cor .* idx.respOld) / sum(idx.respOld .* idx.lowConf);
+res.pctCorLoConfNew = sum(idx.highConf .* idx.cor .* idx.respNew) / sum(idx.respNew .* idx.highConf);
+res.pctCorHiConfNew = sum(idx.lowConf .* idx.cor .* idx.respNew) / sum(idx.respNew .* idx.lowConf);
 
 res.pctOldResp = sum(idx.respOld) / sum(idx.legitResp);

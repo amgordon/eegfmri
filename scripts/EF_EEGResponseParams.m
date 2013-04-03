@@ -7,7 +7,7 @@ par = EF_Params(subj_id);
 [~, idx] = EF_BehAnalyzer(par);
 
 S.subj_id = subj_id;
-S.expt_dir = '/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/';
+S.expt_dir = [par.exptdir '/fmri_data/'];
 S.univar_dir = [S.expt_dir S.subj_id '/' 'analysis_buttonPress'];
 S.eeg_dir = [S.expt_dir S.subj_id '/erpData'];
 S.workspace_dir = [S.expt_dir S.subj_id '/' 'mvpa'];
@@ -17,12 +17,12 @@ S.patRegDir = [S.expt_dir S.subj_id '/' S.patReg];
 S.exp_name = 'AG';
 
 %% function control
-S.loadBOLDData = false;
+S.loadBOLDData = true;
 S.loadEEGData = true;
 %S.eegToFMRIClassification = true;
-S.condensePatterns = true;
-S.useBetaMapPatterns = false;
-S.createAnalysisMap = false;
+S.condensePatterns = false;
+S.useBetaMapPatterns = true;
+S.createAnalysisMap = true;
 
 %% Condition Parameters
 S.conds = 'finger1';
@@ -40,33 +40,38 @@ end
 
 %% Volume Params
 S.roi_name = 'mask.hdr';
-S.roi_file = ['/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/' subj_id '/analysis_buttonPress/mask.hdr'];
+S.roi_file = [par.exptdir 'fmri_data/' subj_id '/analysis_buttonPress/mask.hdr'];
 %S.roi_file = [S.univar_dir '/' S.roi_name];
 %S.roi_file = ['/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/' subj_id '/analysis_buttonPresses_byAmp_RTLocked/leftMotorCortex.nii'];
-S.vol_info = spm_vol('/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/ef_091211/analysis_buttonPresses_bySpectralPower/beta_0001.hdr');
+S.vol_info = spm_vol([par.exptdir 'fmri_data/ef_091211/analysis_buttonPresses_bySpectralPower/beta_0001.hdr']);
 %S.secondaryMask = [];
 %S.secondaryMask = ['/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/' subj_id '/analysis_buttonPresses_byAmp_RTLocked/leftMotorCortex.nii'];
-S.secondaryMask = '/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/group_analyses/analysis_hitsVsCRs_HC_Group/hitsVsCRs_HC/rleftAnG.nii';
+%S.secondaryMask = '/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/group_analyses/analysis_hitsVsCRs_HC_Group/hitsVsCRs_HC/rleftAnG.nii';
 %S.secondaryMask = ['/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/' subj_id '/analysis_hitsVsCRs_HC_bySess/LeftAnG.nii'];
+S.secondaryMask = [par.exptdir 'fmri_data/masks/rleftParietal.rtw.img'];
 
 %% locking and interpolation
-S.interp = true;
-S.lock = 'RT';
+S.interp = false;
+S.lock = 'evonset';
 S.interpText = {'interp' 'noInterp'};
 
 %% TRs
 S.TR_weights = {[1] [0 1] [0 0 1] [0 0 0 1] [0 0 0 0 1] [0 0 0 0 0 1]};
 S.TRs_to_average_over = 1:length(S.TR_weights);
-S.TRByTR = 1;
+S.TRByTR = 0;
 S.TRPatName = 'patsByTR';
 
 %% Workspace Parameters
 S.use_premade_workspace = 1;
 
-if ~iscell(S.TR_weights)
-    S.TRDescription = num2str(find(S.TR_weights));
+if S.TRByTR
+    if ~iscell(S.TR_weights)
+        S.TRDescription = num2str(find(S.TR_weights));
+    else
+        S.TRDescription = 'TRs1Through6';
+    end
 else
-    S.TRDescription = 'TRs1Through6';
+    S.TRDescription = 'HRF';
 end
 
 
@@ -79,35 +84,43 @@ end
 S.workspace = fullfile(S.workspace_dir, [S.subj_id '_' S.roi_name '_' S.smoothTxt{S.use_unsmoothed + 1} '_' S.TRDescription '_' S.lock '_' S.interpText{2-S.interp} S.betaMapTxt '.mat']);
 
 %% EEG Params
-%S.eegDataType = 'trialdata_RTlock';
-S.eegDataType = 'results/trial_data_LP30Hz_RT.mat';
+S.eegDataType = 'results/trial_data_LP30Hz_evonset.mat';
+%S.eegDataType = 'results/trial_data_LP30Hz_RT.mat';
 S.decimationFactor = 5;
 %S.ChOI = {'all'};
-S.ChOI = {'parietal.LPI' 'parietal.LPS'};
+S.ChOI = {'parietal.LPI'};
 %S.ChOI = {'frontal.FM' 'frontal.LFI' 'frontal.LFS' 'central.CM' 'central.LCI' 'central.LCS'};
-S.TOI = 400:600; % in units of samples
-
+%S.TOI = {1:62 63:125 126:187 188:250 251:312 313:375 376:437 438:500 501:562 563:625 626:687 688:750 751:812 813:875}; % in units of samples
+%S.TOI = {1:125 126:250 251:375 376:500 501:625 626:750 751:875}; % in units of samples
+S.TOI = {326:475};
+S.trialSubset = 'allTask';
 %% Classifier Params
 
-%S.lambda = [.01 .1 1 10 100 1000 10000];
+%S.lambda = [.001 .01 .1 1 10 100 1000 10000];
 S.lambda = 1;
 S.trainOptsSVM = '-s 3 -t 0 -c ';
 S.trainOptsLibLinear = '-q -s 0 -c ';
 S.nXvals = 10;
-S.classifier = 'svr';
+S.classifier = 'glmnet';
 S.nFeats = 0;
 S.FS = false;
+%S.ValidationLambda = [.001 .01 .1 1 10 100 1000 10000];
 S.ValidationLambda = 1;
 S.normalizeFeatures = true;
+S.balanceTrainingSet = true;
+
+S.glmnet.alpha_set = .1:.1:.9;
+S.glmnet.nlambda = 100;
+S.glmnet.alpha = .5;
 
 %% classFile
-S.classMatDir = ['/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/EEG_to_BOLD/classMats/'];
+S.classMatDir = [par.exptdir 'fmri_data/EEG_to_BOLD/classMats/'];
 S.classMatType = 'EF';
 
 %% beta map creation
 S.modelSubSample = 1; %0 for no sub-sampling, 1 to subsample only the session of interest
-S.betaMapPrefix = 'whole_brain_trial_';
-S.bf = 'FIR'; %FIR or HRF
+S.betaMapPrefix = 'spm_';
+S.bf = 'HRF'; %FIR or HRF
 S.num_FIR_bins = 8;
 
 
@@ -128,7 +141,9 @@ if S.useBetaMapPatterns
             S.preprocPatCondensedName{TRN} = ['betaMaps_' num2str(TRN)];
         end
     else
+        idx.TRsExist = true(length(idx.allTrials), 1);
         dImg = dir(fullfile(S.patRegDir,[ S.betaMapPrefix '*.img']));
+        dImg = dImg(find(~cellfun(@(x) ~isempty(strfind(x, 'TR')) ,{dImg(:).name})));
         S.filenames{1} = [repmat([S.patRegDir '/'],length(dImg),1) vertcat(dImg.name)];
         S.preprocPatCondensedName = {'betaMaps'};
     end

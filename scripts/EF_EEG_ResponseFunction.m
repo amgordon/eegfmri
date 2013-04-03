@@ -1,4 +1,4 @@
-function [S results] = EF_EEG_ResponseFunction(subj_id)
+function [S results] = EF_EEG_ResponseFunction(subj_id, varargin)
 %to do:
 
 %% Immediately
@@ -55,6 +55,7 @@ results = [];
 
 %generate params
 [S par idx] = EF_EEGResponseParams(subj_id);
+S = propval(varargin, S);
 
 %% Begin Analysis Here
 if S.loadBOLDData
@@ -86,9 +87,13 @@ if S.loadBOLDData
                 subj = load_analyze_pattern(subj,S.preprocPatCondensedName{f},S.roi_name, S.img_files{f},'single',true);
                 loadedPat = get_mat(subj, 'pattern', S.preprocPatCondensedName{f});
                 
-                thisPat = single(nan(size(loadedPat,1), size(idx.TRsExist,1)));
+                thisPat = single(nan(size(loadedPat,1), size(idx.allTrials,2)));
                 
-                thisPat(:,idx.TRsExist(:,f)) = loadedPat;
+                if S.TRByTR
+                    thisPat(:,idx.TRsExist(:,f)) = loadedPat;
+                else
+                    thisPat = loadedPat;
+                end
                 subj = set_mat(subj, 'pattern', S.preprocPatCondensedName{f}, thisPat);
             end
             
@@ -220,15 +225,15 @@ if S.loadEEGData
     eeg = load(fullfile(S.eeg_dir, S.eegDataType));
     
     if strcmp(S.eegDataType, 'spectraldata3_RT.mat')
-        eegDat = squeeze(eeg.data.normpower);
+        eegDat_h = squeeze(eeg.data.normpower);
     else
-        eegDat = eeg.data.trialdata;
+        eegDat_h = eeg.data.trialdata;
     end
     
     %% define bad channels and trials
+    
     channel_rois;
-    S.chnls = chnls;
-    clear chnls;
+    S.chnls = chnls; 
     
     eegfmri_ON_trialch_info
     
@@ -244,137 +249,175 @@ if S.loadEEGData
     ChOI = [ChOI_h{:}];
     chansToInclude = sort(setdiff(ChOI, S.badch{par.subNo}));
     
-    eegDat = eegDat(chansToInclude,:,S.TOI);
-    
-    
-    %% reshape and downsample
-    sz = size(eegDat);
-    S.szEEGInit = sz;
-    
-    %
-    eegDatReSam = zeros(sz(1), sz(2), ceil(sz(3)/S.decimationFactor));
-    for j = 1:sz(1)
-        for k = 1:sz(2)
-            thisEEGTrial = squeeze(eegDat(j,k,:));
-            thisResEEGTrial = single(decimate(double(thisEEGTrial), S.decimationFactor));
-            eegDatReSam(j,k,:) = thisResEEGTrial;
+    for t = 1:length(S.TOI)
+        thisTOI = S.TOI{t};
+        eegDat = eegDat_h(chansToInclude,:,thisTOI);
+        
+        %% reshape and downsample
+        sz = size(eegDat);
+        S.szEEGInit = sz;
+        
+        %
+        eegDatReSam = zeros(sz(1), sz(2), ceil(sz(3)/S.decimationFactor));
+        for j = 1:sz(1)
+            for k = 1:sz(2)
+                thisEEGTrial = squeeze(eegDat(j,k,:));
+                thisResEEGTrial = single(decimate(double(thisEEGTrial), S.decimationFactor));
+                eegDatReSam(j,k,:) = thisResEEGTrial;
+            end
         end
+        
+        eegDatSf = shiftdim(eegDatReSam,2);
+        eegDatResh = reshape(eegDatSf, size(eegDatSf,1)*size(eegDatSf,2), size(eegDatSf,3));
+        
+        eegDat_pats_avgAcrossChnls = squeeze(mean(eegDatSf,2))';
+        
+        eegDat_pats = eegDatResh';
+        S.szEEGPats = size(eegDat_pats);
+        %
+        %
+        %     % reshape the data such that features now combine across time and channels
+        %     eegDatSf = shiftdim(eegDat,2);
+        %     eegDatResh = reshape(eegDatSf, sz(1)*sz(3), sz(2));
+        %
+        %     % downsample the eeg data
+        %     eegDatReSam = zeros(ceil(( sz(1)*sz(3))/S.decimationFactor), sz(2));
+        %     for k = 1:size(eegDatResh,2)
+        %         eegDatReSam(:,k) = single(decimate(double(eegDatResh(:,k)),S.decimationFactor))';
+        %     end
+        %
+        %     eegDat_pats = eegDatReSam';
+        %     S.szEEGPats = size(eegDat_pats);
+        
+        %% select good trials
+        S.goodtr = true(size(idx.noResp));
+        S.goodtr(S.badtr{par.subNo}) = false;
+        
+        thisModIdxEEG = (~idx.noResp & S.goodtr);
+        %     %% validation test of BOLD patterns
+            for m=1:size(allPats,1)
+        
+                BOLDButtonPress = squeeze(mean(allPats(m,:,(~idx.noResp & idx.TRsExist(:,m)'))));
+                BOLDFix = squeeze(mean(allPats(m,:,(idx.noResp & idx.TRsExist(:,m)'))));
+        
+                %[~, ~, ~, results.tTestBOLDButtonPressVsFix.TR(m).stats] = ttest2(BOLDButtonPress', BOLDFix);
+            end
+        %
+        %     %     %can you predict memory state?
+            for m=1:size(allPats,1)
+                idxCorMemory = idx.cor & S.goodtr & idx.TRsExist(:,m)';
+                sparseX = sparse(squeeze(allPats(m,:,idxCorMemory,:)))';
+                hitVsCRs = 2*idx.respOld(idxCorMemory)'-1;
+                %results.classifyMemoryStateWithBOLD(m) = EF_x_validation(sparseX,hitVsCRs,S,S.ValidationLambda,'discrete', 'liblinear');
+            end
+        
+        % Can you predict trialwise EEG with BOLD?
+        for m=1:size(allPats,1)
+            nanpats_h = isnan(squeeze(allPats(m,:,:)));
+            idx.nanpats = sum(nanpats_h)' > 0; %index of BOLD patterns that have nans in them
+            
+            if strcmp(S.trialSubset, 'hits')
+                thisTrialSubset = (idx.TRsExist(:,m) & ~idx.nanpats & idx.old' & idx.respOld'); % which trials should be included in the classification?
+            elseif strcmp(S.trialSubset, 'CRs')
+                thisTrialSubset = (idx.TRsExist(:,m) & ~idx.nanpats & idx.new' & idx.respNew');
+            elseif strcmp(S.trialSubset, 'allTask')
+                thisTrialSubset = (idx.TRsExist(:,m) & ~idx.nanpats & (idx.old' + idx.new'));
+            end
+                
+                
+            BOLD = squeeze(allPats(m,:,thisTrialSubset))';
+            
+            BOLD_cor = squeeze(allPats(m,:,(thisTrialSubset & idxCorMemory')))';
+            BOLD_X_Cond = [BOLD_cor .* repmat(hitVsCRs, 1, size(BOLD_cor,2))];
+            
+            eegMean = mean(eegDat_pats(thisTrialSubset,:),2);
+            meanEEG = mean(eegMean);
+            stdEEG = std(eegMean);            
+            idxNoOutlier = ((eegMean<(2.5*stdEEG + meanEEG)) & (eegMean>(-2.5*stdEEG + meanEEG)) );
+            
+            eegMeanCor = mean(eegDat_pats((thisTrialSubset & idxCorMemory'),:),2);
+            meanEEGCor = mean(eegMeanCor);
+            stdEEGCor = std(eegMeanCor);
+            idxNoOutlierCorOnly = ((eegMeanCor<(2.5*stdEEGCor + meanEEGCor)) & (eegMeanCor>(-2.5*stdEEGCor + meanEEGCor)) );
+           
+            %results.EEGWithBOLD.BOLDPat(m).EEGBin(t) = EF_x_validation(BOLD(idxNoOutlier,:),eegMean(idxNoOutlier),S,S.ValidationLambda,'continuous', 'svr');
+            %results.EEGWithBOLD_X_Cond.BOLDPat(m).EEGBin(t) = EF_x_validation(BOLD_cor(idxNoOutlierCorOnly,:),eegMean(idxNoOutlierCorOnly),S,S.ValidationLambda,'continuous', 'svr');
+            
+            %results.EEGWithBOLD.BOLDPat(m).EEGBin(t).mod = [];
+            results.EEGWithBOLD_X_Cond.BOLDPat(m).EEGBin(t).mod = [];
+        end
+        %% validation tests of EEG
+        %     EEGButtonPress = squeeze(mean(mean(eegDat(:, ~idx.noResp, :),3)));
+        %     EEGFix = squeeze(mean(mean(eegDat(:, idx.noResp, :),3)));
+        %
+        %     [~, ~, ~, results.tTestEEGButtonPressVsFix.stats] = ttest2(EEGButtonPress', EEGFix);
+        %
+        %     YRTs = eeg.data.RTs(thisModIdxEEG);
+        %
+        %     XRTs = eegDat_pats(thisModIdxEEG, :);
+        %
+        %     %can you predict the RT?
+        %     results.classifyRTWithEEG = EF_x_validation(XRTs,YRTs,S,S.ValidationLambda,'continuous', 'svr');
+        %
+        %     %can you predict a button press?
+             sparseX = sparse(eegDat_pats(S.goodtr,:));
+             respsNegPos = 2*idx.noResp(S.goodtr)'-1;
+             results.classifyButtonPressWithEEG = EF_x_validation(sparseX,respsNegPos,S,S.ValidationLambda,'discrete', 'liblinear');
+        %
+        
+        %         %can you predict memory state?
+        S.idxCorMemory = idx.cor & S.goodtr & ismember(idx.sess', par.scans_to_include);
+        S.idxCorMemoryHCWithR = idx.cor & S.goodtr & (idx.highConf + idx.recollect) & ismember(idx.sess', par.scans_to_include);
+        S.idxCorMemoryHCNoR = idx.cor & S.goodtr & (~idx.recollect) & ismember(idx.sess', par.scans_to_include);
+        S.idxCorMemoryHCHitsAndR = idx.cor & S.goodtr & idx.highConf & idx.old & ismember(idx.sess', par.scans_to_include);
+        %S.idxHCWithR = (idx.highConf + idx.recollect) & S.goodtr & ismember(idx.sess', par.scans_to_include);
+        
+        results.EEGBin(t).classifyMemoryState = EF_EEG_classifyOldNew(S.idxCorMemory,idx.respOld,S,eegDat_pats_avgAcrossChnls);
+        [~, ~, results.EEGBin(t).classifyMemoryStateWithMeanEEG] = mnrfit(mean(eegDat_pats_avgAcrossChnls(S.idxCorMemoryHCWithR,:),2),2-idx.respOld(S.idxCorMemoryHCWithR)');
+        results.EEGBin(t).classifyHCMemoryState = EF_EEG_classifyOldNew(S.idxCorMemoryHCWithR,idx.respOld,S,eegDat_pats_avgAcrossChnls);
+        %results.classifyHCHitsVsHCCRs = EF_EEG_classifyOldNew(S.idxCorMemoryHCNoR,idx.respOld,S,eegDat_pats);
+        %results.classifyHCHitsVsRecollection = EF_EEG_classifyOldNew(S.idxCorMemoryHCHitsAndR,idx.recollect,S,eegDat_pats);
+        
+
+        
+        %% classify BOLD with EEG
+        
+        %     if S.TRByTR
+        %         YMat = squeeze(mean(allPats(:,:,:),2))';
+        %     else
+        %         YMat = squeeze(mean(allPats(:,:,:),2));
+        %     end
+        %
+        %     %% classify
+        %     for m=1:size(YMat,2)
+        %         thisModIdx = (~idx.noResp & S.goodtr & idx.TRsExist(:,m)' & idx.trialHasEstimate);
+        %         Y = double(YMat(thisModIdx,m));
+        %         X = eegDat_pats(thisModIdx, :);
+        %         if S.normalizeFeatures
+        %             X = zscore(X);
+        %         end
+        %         results.classifyBOLDWithEEG.TR(m) = EF_x_validation(X,Y,S,S.lambda,'continuous', 'svr');
+        %     end
+        
     end
-    
-    eegDatSf = shiftdim(eegDatReSam,2);
-    eegDatResh = reshape(eegDatSf, size(eegDatSf,1)*size(eegDatSf,2), size(eegDatSf,3));
-    
-    eegDat_pats = eegDatResh';
-    S.szEEGPats = size(eegDat_pats);
-    %
-%     
-%     % reshape the data such that features now combine across time and channels
-%     eegDatSf = shiftdim(eegDat,2);
-%     eegDatResh = reshape(eegDatSf, sz(1)*sz(3), sz(2));
-%     
-%     % downsample the eeg data
-%     eegDatReSam = zeros(ceil(( sz(1)*sz(3))/S.decimationFactor), sz(2));
-%     for k = 1:size(eegDatResh,2)
-%         eegDatReSam(:,k) = single(decimate(double(eegDatResh(:,k)),S.decimationFactor))';
-%     end
-%     
-%     eegDat_pats = eegDatReSam';
-%     S.szEEGPats = size(eegDat_pats);
-    
-    %% select good trials
-    S.goodtr = true(size(idx.noResp));
-    S.goodtr(S.badtr{par.subNo}) = false;
-    
-    thisModIdxEEG = (~idx.noResp & S.goodtr);
-    %     %% validation test of BOLD patterns
-    %     for m=1:size(allPats,1)
-    %
-    %         BOLDButtonPress = squeeze(mean(allPats(m,:,(~idx.noResp & idx.TRsExist(:,m)'))));
-    %         BOLDFix = squeeze(mean(allPats(m,:,(idx.noResp & idx.TRsExist(:,m)'))));
-    %
-    %         [~, ~, ~, results.tTestBOLDButtonPressVsFix.TR(m).stats] = ttest2(BOLDButtonPress', BOLDFix);
-    %     end
-    %
-    %     %     %can you predict memory state?
-    %     for m=1:size(allPats,1)
-    %         idxCorMemory = idx.cor & S.goodtr & idx.TRsExist(:,m)';
-    %         sparseX = sparse(squeeze(allPats(m,:,idxCorMemory,:)))';
-    %         hitVsCRs = 2*idx.respOld(idxCorMemory)'-1;
-    %         results.classifyMemoryStateWithBOLD(m) = EF_x_validation(sparseX,hitVsCRs,S,S.ValidationLambda,'discrete', 'liblinear');
-    %     end
-    
-    
-    %% validation tests of EEG
-    %     EEGButtonPress = squeeze(mean(mean(eegDat(:, ~idx.noResp, :),3)));
-    %     EEGFix = squeeze(mean(mean(eegDat(:, idx.noResp, :),3)));
-    %
-    %     [~, ~, ~, results.tTestEEGButtonPressVsFix.stats] = ttest2(EEGButtonPress', EEGFix);
-    %
-    %     YRTs = eeg.data.RTs(thisModIdxEEG);
-    %
-    %     XRTs = eegDat_pats(thisModIdxEEG, :);
-    %
-    %     %can you predict the RT?
-    %     results.classifyRTWithEEG = EF_x_validation(XRTs,YRTs,S,S.ValidationLambda,'continuous', 'svr');
-    %
-    %     %can you predict a button press?
-    %     sparseX = sparse(eegDat_pats(S.goodtr,:));
-    %     respsNegPos = 2*idx.noResp(S.goodtr)'-1;
-    %     results.classifyButtonPressWithEEG = EF_x_validation(sparseX,respsNegPos,S,S.ValidationLambda,'discrete', 'liblinear');
-    %
-    
-%     %% CONDENSE THIS STUFF
-        %can you predict memory state?
-        idxCorMemory = idx.cor & S.goodtr & ismember(idx.sess', par.scans_to_include);
-        sparseX = sparse(eegDat_pats(idxCorMemory,:));
-        hitVsCRs = 2*idx.respOld(idxCorMemory)'-1;
-        results.classifyMemoryStateWithEEG = EF_x_validation(sparseX,hitVsCRs,S,S.ValidationLambda,'discrete', 'liblinear');
-        S.idxCorMemory = idxCorMemory;
-
-        %can you predict high-confidence memory state including R trials?
-        idxCorMemoryHC = idx.cor & S.goodtr & idx.highConf & ismember(idx.sess', par.scans_to_include);
-        sparseX = sparse(eegDat_pats(idxCorMemoryHC,:));
-        hitVsCRs = 2*idx.respOld(idxCorMemoryHC)'-1;
-        results.classifyHCMemoryStateWithEEG = EF_x_validation(sparseX,hitVsCRs,S,S.ValidationLambda,'discrete', 'liblinear');
-        S.idxCorMemoryHC = idxCorMemoryHC;
-
-        %can you predict high-confidence hits (noRs) vs. high-confidence CRs?
-        idxCorMemory = idx.cor & S.goodtr & (~idx.recollect) & ismember(idx.sess', par.scans_to_include);
-        sparseX = sparse(eegDat_pats(idxCorMemory,:));
-        hitVsCRs = 2*idx.respOld(idxCorMemory)'-1;
-        results.classifyHCHitsVsHCCRs = EF_x_validation(sparseX,hitVsCRs,S,S.ValidationLambda,'discrete', 'liblinear');
-        S.idxCorMemory = idxCorMemory;
-
-        %can you predict high-confidence hits vs. Rs?
-        idxCorMemoryHC = idx.cor & S.goodtr & idx.highConf & idx.old & ismember(idx.sess', par.scans_to_include);
-        sparseX = sparse(eegDat_pats(idxCorMemoryHC,:));
-        hitVsRecollect = 2*idx.recollect(idxCorMemoryHC)'-1;
-        results.classifyHCHitsVsRecollection = EF_x_validation(sparseX,hitVsRecollect,S,S.ValidationLambda,'discrete', 'liblinear');
-        S.idxCorMemoryHC = idxCorMemoryHC;
-
-
-    
-%     if S.TRByTR
-%         YMat = squeeze(mean(allPats(:,:,:),2))';
-%     else
-%         YMat = squeeze(mean(allPats(:,:,:),2));
-%     end
-%     
-%     %% classify
-%     for m=1:size(YMat,2)
-%         thisModIdx = (~idx.noResp & S.goodtr & idx.TRsExist(:,m)' & idx.trialHasEstimate);
-%         Y = double(YMat(thisModIdx,m));
-%         X = eegDat_pats(thisModIdx, :);
-%         if S.normalizeFeatures
-%             X = zscore(X);
-%         end
-%         results.classifyBOLDWithEEG.TR(m) = EF_x_validation(X,Y,S,S.lambda,'continuous', 'svr');
-%     end
-    
 end
 fprintf('finished subject %s', subj_id)
 end
 
+function [theseResults] = EF_EEG_classifyOldNew(thisIdx,classLabels,S,eegDat_pats)
 
+        fullX = eegDat_pats(thisIdx,:);
+        sparseX = sparse(fullX);
+        
+        hitsVsCRs_1And2 = 2-classLabels(thisIdx)';
+        hitVsCRs_pos1AndNeg1 = 2*classLabels(thisIdx)'-1;
+        
+        if strcmp(S.classifier, 'glmnet')
+            theseResults = EF_x_validation(fullX,hitsVsCRs_1And2,S,S.ValidationLambda,'discrete', S.classifier);
+        else
+            theseResults = EF_x_validation(sparseX,hitVsCRs_pos1AndNeg1,S,S.ValidationLambda,'discrete', S.classifier);
+        end
+
+end
 
 

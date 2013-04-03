@@ -4,9 +4,9 @@ print_dir = '/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/slover_figures';
 
 for i = 1:length(sa_good)
     
-    maps = dir( (fullfile(exp_dir, sa_good{i}, 'analysis_buttonPresses_byAmp_RTLocked', 'spmT*.img')));
+    maps = dir( (fullfile(exp_dir, sa_good{i}, 'analysis_hitsAndCRsByConf_Rec', 'mask.img')));
     
-    anatFile = fullfile(exp_dir, sa_good{i}, 'anat', 'V001.nii');
+    anatFile = fullfile(exp_dir, sa_good{i}, 'anat', 'wV001.nii');
     InFile = fullfile(exp_dir, sa_good{i}, 'anat', 'In001.nii');
     
     if ~exist(anatFile)
@@ -17,13 +17,14 @@ for i = 1:length(sa_good)
     %so.img(1).vol = spm_vol(fname);
     so.img(1).vol = spm_vol('/Applications/spm5/canonical/single_subj_T1.nii');
     
-    so.img(2).vol = spm_vol(fullfile(exp_dir, sa_good{i}, 'analysis_buttonPresses_byAmp_RTLocked', maps(1).name));
-    so.img(3).vol = spm_vol(fullfile(exp_dir, sa_good{i}, 'analysis_buttonPresses_byAmp_RTLocked', maps(1).name));
+    so.img(2).vol = spm_vol(fullfile(exp_dir, sa_good{i}, 'analysis_hitsAndCRsByConf_Rec', 'mask.img'));
+    %so.img(2).vol = spm_vol(fullfile(exp_dir, sa_good{i}, 'analysis_buttonPresses_byAmp_RTLocked', maps(1).name));
+    %so.img(3).vol = spm_vol(fullfile(exp_dir, sa_good{i}, 'analysis_buttonPresses_byAmp_RTLocked', maps(1).name));
    
 
-    figName = [sa_good{i}  'analysis_buttonPresses_byAmp_RTLocked.eps'];
+    figName = [sa_good{i}  'analysis_hitsAndCRsByConf_Rec_mask.eps'];
     slover(so);
-    so.img(3).range = -so.img(2).range;
+    %so.img(3).range = -so.img(2).range;
     %so.img(1).range(2) = 4000;
     so.img(1).range(2) = 1;
     %%

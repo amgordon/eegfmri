@@ -33,7 +33,7 @@ eegfmri_ON_trialch_info
 
 for s =  1:numel(subjs);
     
-    savepath = fullfile('/Users/alangordon/mounts/w5/alan/eegfmri/fmri_data/', foldernames{s}, '/');
+    savepath = fullfile('/biac4/wagner/biac3/wagner5/alan/eegfmri/fmri_data/', foldernames{s}, '/');
 
     sub = subjs(s);
     %mainpath = ['/Volumes/EXT_HD/ON_eegfmri/s' num2str(sub) '/clean_data2/'];
